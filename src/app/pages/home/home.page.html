@@ -1,0 +1,39 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title class="animate__animated animate__backInDown">
+      Lista de Compras
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-list class="animate__animated animate__bounceInUp">
+    <ion-item *ngIf="tarefaCollection.length < 1">
+      <ion-label>Não há Compras</ion-label>
+    </ion-item>
+    <ion-item-sliding *ngFor="let item of tarefaCollection">
+      <ion-item (click)="openActions(item)">
+        <ion-label>
+          <h2 *ngIf="item.feito==true"><del><strong>{{item.tarefa}}</strong></del></h2>
+          <h2 *ngIf="item.feito==false"><strong>{{item.tarefa}}</strong></h2>
+          <p class="text-p" *ngIf="item.feito==false">Quantidade: {{item.quantidade}}</p>
+          <p class="text-p" *ngIf="item.feito==true">Quantidade: {{item.quantidade}}</p>
+          <p class="text-p" *ngIf="item.feito==false">Pendente </p>
+          <p class="text-p" *ngIf="item.feito==true">Realizado</p>
+        </ion-label>
+        <ion-icon slot="start" name="information-circle" color="danger" *ngIf="!item.feito"></ion-icon>
+        <ion-icon slot="start" name="checkmark-circle" color="success" *ngIf="item.feito"></ion-icon>
+      </ion-item>
+      <ion-item-options side="end">
+        <ion-item-option color="danger" (click)="delete(item)">Excluir</ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+
+  <!-- fab placed to the top end -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="showAdd()" color="primary" class="animate__animated animate__bounce">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content>
