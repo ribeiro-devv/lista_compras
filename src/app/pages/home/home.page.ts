@@ -33,6 +33,10 @@ export class HomePage {
       mode: 'ios',
       inputs: [
         {
+          name: 'codigo',
+          type: 'number',
+        },
+        {
           name: 'tarefa',
           type: 'text',
           placeholder: 'Nome do Produto',
@@ -86,48 +90,55 @@ export class HomePage {
     });
     await alert.present();
   }
-  // async editar(tarefa) {
-  //   const alert = await this.alertCtrl.create({
-  //     header: 'Tarefa',
-  //     mode: 'ios',
-  //     inputs: [
-  //       {
-  //         name: 'tarefa',
-  //         type: 'text',
-  //         placeholder: tarefa.tarefa
-  //       }
-  //     ],
-  //     buttons: [
-  //       {
-  //         text: 'Cancelar',
-  //         role: 'cancel',
-  //         cssClass: 'secondary',
-  //         handler: () => {
-  //         }
-  //       }, {
-  //         text: 'Salvar',
-  //         handler: (tarefa) => {
-  //           this.tarefaService.edicao(tarefa, () => {
-  //             this.listarTarefa();
-  //           });
-  //         }
-  //       }
-  //     ]
-  //   });
-  //   await alert.present();
-  // }
+  async editar(tarefa) {
+    const alert = await this.alertCtrl.create({
+      header: 'Tarefa',
+      mode: 'ios',
+      inputs: [
+        {
+          name: 'codigo',
+          type: 'number',
+          value: tarefa.codigo,
+          disabled: true
+
+        },
+        {
+          name: 'tarefa',
+          type: 'text',
+          placeholder: tarefa.tarefa
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: () => {
+          }
+        }, {
+          text: 'Salvar',
+          handler: (tarefa) => {
+            this.tarefaService.edicao(tarefa, () => {
+              this.listarTarefa();
+            });
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
   async openActions(tarefa: any) {
     const actionSheet = await this.actionSheetCtrl.create({
       header: 'O QUE DESEJA FAZER?',
       mode: 'ios',
       buttons: [
-        // {
-        //   text: 'Editar tarefa',
-        //   icon: 'pencil',
-        //   handler: () => {
-        //     this.editar(tarefa);
-        //   },
-        // },
+        {
+          text: 'Editar tarefa',
+          icon: 'pencil',
+          handler: () => {
+            this.editar(tarefa);
+          },
+        },
         {
           text: tarefa.feito ? 'Colocar como pendente' : 'Marcar como realizado',
           icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',

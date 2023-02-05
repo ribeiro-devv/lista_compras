@@ -11,7 +11,7 @@ export class TarefaService {
   constructor(private actionSheetCtrl: ActionSheetController) { }
   async salvar(tarefa: any, callback = null) {
     tarefa.feito = false;
-
+ 
     if(tarefa.tarefa == null || tarefa.tarefa == undefined || tarefa.tarefa == '' ){
       const actionSheet = this.actionSheetCtrl.create({
         header: 'O nome do Produto não pode estar vazio',
@@ -83,7 +83,7 @@ export class TarefaService {
   }
   atualizar(tarefa: any, callback = null){
     let value = localStorage.getItem(this.key);
-
+    
     if (value == null || value == undefined) {
      return;
     }
@@ -104,27 +104,38 @@ export class TarefaService {
       callback();
     }
   }
-  // edicao(tarefa: any, callback = null){
+  edicao(tarefa: any, callback = null){
 
-  //   let value = localStorage.getItem(this.key);
-    
-  //   if (value == null || value == undefined) {
-  //    return;
-  //   }
-  //   else {
-  //     let collection: any[] = JSON.parse(value);
+    let value = localStorage.getItem(this.key);
 
-  //     collection.forEach(item=>{
-  //       if(item.tarefa == tarefa.tarefa){
-  //         item.tarefa = tarefa.tarefa;
-  //       }
-  //     });
+    console.log(value)
+
+    if (value == null || value == undefined) {
+      return;
+    }
+
+    else {
+      let collection: any[] = JSON.parse(value);
       
-  //     localStorage.setItem(this.key, JSON.stringify(collection));
-  //   }
+      console.log(collection);
 
-  //   if (callback != null) {
-  //     callback();
-  //   }
-  // }
+      collection.forEach(item=>{
+        // console.log('item ==>' + item)
+        console.log('item ==>' + (item.codigo))
+        console.log('tarefa ==>' + tarefa.codigo)
+        if(item.codigo == tarefa.codigo){
+          console.log("entrou")
+          item.tarefa = tarefa.tarefa
+        } else{
+          console.log("n entrou")
+        }
+      });
+      
+      localStorage.setItem(this.key, JSON.stringify(collection));
+    }
+
+    if (callback != null) {
+      callback();
+    }
+  }
 }
