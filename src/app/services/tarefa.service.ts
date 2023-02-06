@@ -171,7 +171,7 @@ export class TarefaService {
   setArray(callback = null) {
     let value = localStorage.getItem(this.key);
 
-    if (value == null || value == undefined) {
+    if (value != null || value != undefined) {
       let collection: any[] = JSON.parse(value);
       collection = [{"codigo":0,"tarefa": null,"quantidade": null,"feito":false}];
       localStorage.setItem(this.key, JSON.stringify(collection));
