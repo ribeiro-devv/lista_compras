@@ -236,4 +236,20 @@ export class HomePage {
     });
     await alert.present();
   }
+  async showArray() {
+    const alert = await this.alertCtrl.create({
+      header: 'Iniciar',
+      mode: 'ios',
+      buttons: [{
+          text: 'Click aqui para Iniciar',
+          handler: () => {
+            this.tarefaService.setArray(() => {
+              this.listarTarefa();
+            });
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
 }

@@ -19,8 +19,8 @@ export class TarefaService {
 
     let value = localStorage.getItem(this.key);
 
-
     if(value == null || value == undefined){
+      console.log("entrou")
       this.tarefaCollection.push(tarefa);
       localStorage.setItem(this.key, JSON.stringify(this.tarefaCollection));
     }else {
@@ -163,6 +163,19 @@ export class TarefaService {
     collection = [{"codigo":0,"tarefa": null,"quantidade": null,"feito":false}];
 
     localStorage.setItem(this.key, JSON.stringify(collection));
+
+    if (callback != null) {
+      callback();
+    }
+  }
+  setArray(callback = null) {
+    let value = localStorage.getItem(this.key);
+
+    if (value == null || value == undefined) {
+      let collection: any[] = JSON.parse(value);
+      collection = [{"codigo":0,"tarefa": null,"quantidade": null,"feito":false}];
+      localStorage.setItem(this.key, JSON.stringify(collection));
+    }
 
     if (callback != null) {
       callback();
