@@ -35,6 +35,8 @@ export class HomePage {
         {
           name: 'codigo',
           type: 'number',
+          placeholder: 'Código',
+          disabled: true
         },
         {
           name: 'tarefa',
@@ -57,10 +59,26 @@ export class HomePage {
           }
         }, {
           text: 'Salvar',
-          handler: (tarefa) => {
-            this.tarefaService.salvar(tarefa, () => {
-              this.listarTarefa();
-            });
+          handler: async (tarefa) => {
+              if(tarefa.tarefa == null || tarefa.tarefa == undefined || tarefa.tarefa == '' ){
+                const actionSheet = this.actionSheetCtrl.create({
+                  header: 'O nome do Produto não pode estar vazio',
+                  mode: 'ios',
+                  buttons: [
+                    {
+                      text: 'OK',
+                      icon: 'close',
+                      role: 'cancel',
+                    }
+                  ],
+                });
+                (await actionSheet).present();
+              } else{
+                this.tarefaService.salvar(tarefa, () => {
+                this.listarTarefa();
+                });
+
+              }
           }
         }
       ]
@@ -92,7 +110,7 @@ export class HomePage {
   }
   async editar(tarefa) {
     const alert = await this.alertCtrl.create({
-      header: 'Tarefa',
+      header: 'Produto',
       mode: 'ios',
       inputs: [
         {
@@ -105,7 +123,12 @@ export class HomePage {
         {
           name: 'tarefa',
           type: 'text',
-          placeholder: tarefa.tarefa
+          value: tarefa.tarefa
+        },
+        {
+          name: 'quantidade',
+          type: 'number',
+          value: tarefa.quantidade,
         }
       ],
       buttons: [
@@ -128,37 +151,89 @@ export class HomePage {
     await alert.present();
   }
   async openActions(tarefa: any) {
-    const actionSheet = await this.actionSheetCtrl.create({
-      header: 'O QUE DESEJA FAZER?',
+    if(tarefa.feito == true){
+      const actionSheet = await this.actionSheetCtrl.create({
+        header: 'O QUE DESEJA FAZER?',
+        mode: 'ios',
+        buttons: [
+          {
+            text: tarefa.feito ? 'Colocar como pendente' : 'Marcar como realizado',
+            icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
+            handler: () => {
+              tarefa.feito = !tarefa.feito
+  
+              this.tarefaService.atualizar(tarefa, () => {
+                this.listarTarefa();
+              });
+            },
+          },
+          {
+            text: 'Cancelar',
+            icon: 'close',
+            role: 'cancel',
+            handler: () => {
+            }
+          }
+        ],
+      });
+      await actionSheet.present();
+    } else{
+      const actionSheet = await this.actionSheetCtrl.create({
+        header: 'O QUE DESEJA FAZER?',
+        mode: 'ios',
+        buttons: [
+          {
+            text: 'Editar Produto',
+            icon: 'pencil',
+            handler: () => {
+              this.editar(tarefa);
+            },
+          },
+          {
+            text: tarefa.feito ? 'Colocar como pendente' : 'Marcar como realizado',
+            icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
+            handler: () => {
+              tarefa.feito = !tarefa.feito
+  
+              this.tarefaService.atualizar(tarefa, () => {
+                this.listarTarefa();
+              });
+            },
+          },
+          {
+            text: 'Cancelar',
+            icon: 'close',
+            role: 'cancel',
+            handler: () => {
+            }
+          }
+        ],
+      });
+      await actionSheet.present();
+    }
+    
+  }
+  async showExclusion() {
+    const alert = await this.alertCtrl.create({
+      header: 'Excluir Todos Produtos?',
       mode: 'ios',
       buttons: [
         {
-          text: 'Editar tarefa',
-          icon: 'pencil',
-          handler: () => {
-            this.editar(tarefa);
-          },
-        },
-        {
-          text: tarefa.feito ? 'Colocar como pendente' : 'Marcar como realizado',
-          icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
-          handler: () => {
-            tarefa.feito = !tarefa.feito
-
-            this.tarefaService.atualizar(tarefa, () => {
-              this.listarTarefa();
-            });
-          },
-        },
-        {
           text: 'Cancelar',
-          icon: 'close',
           role: 'cancel',
+          cssClass: 'secondary',
           handler: () => {
           }
+        }, {
+          text: 'Excluir',
+          handler: () => {
+            this.tarefaService.excluirTodos(() => {
+              this.listarTarefa();
+            });
+          }
         }
-      ],
+      ]
     });
-    await actionSheet.present();
+    await alert.present();
   }
 }

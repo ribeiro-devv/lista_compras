@@ -7,46 +7,43 @@ import { ActionSheetController } from '@ionic/angular';
 export class TarefaService {
   tarefaCollection: any[] = [];
   key: 'tarefaCollection';
+  codMostrar: boolean;
 
   constructor(private actionSheetCtrl: ActionSheetController) { }
   async salvar(tarefa: any, callback = null) {
     tarefa.feito = false;
- 
-    if(tarefa.tarefa == null || tarefa.tarefa == undefined || tarefa.tarefa == '' ){
-      const actionSheet = this.actionSheetCtrl.create({
-        header: 'O nome do Produto não pode estar vazio',
-        mode: 'ios',
-        buttons: [
-          {
-            text: 'OK',
-            icon: 'close',
-            role: 'cancel',
-            handler: () => {
-            }
-          }
-        ],
-      });
-     (await actionSheet).present();
-    } else{
-      let value = localStorage.getItem(this.key);
-  
-      if (value == null || value == undefined) {
-        this.tarefaCollection.push(tarefa)
-        localStorage.setItem(this.key, JSON.stringify(this.tarefaCollection));
-      }
-      else {
-        let collection: any[] = JSON.parse(value);
-        collection.push(tarefa);
-        localStorage.setItem(this.key, JSON.stringify(collection));
-        
-      }
-  
-      if (callback != null) {
-        callback();
-      }
-
+    
+    if(tarefa.codigo == ''){
+      tarefa.codigo++;
     }
 
+    let value = localStorage.getItem(this.key);
+
+
+    if(value == null || value == undefined){
+      this.tarefaCollection.push(tarefa);
+      localStorage.setItem(this.key, JSON.stringify(this.tarefaCollection));
+    }else {
+      let collection: any[] = JSON.parse(value);
+      if(collection == null || collection == undefined || collection.length < 0){
+        return;
+      } else{
+        let last = collection[collection.length-1];
+        if(last == null ||last == undefined || last == ''){
+          return;
+        } else{
+          let num = last.codigo
+          tarefa.codigo = num + 1;
+        }
+      }
+      collection.push(tarefa);
+      localStorage.setItem(this.key, JSON.stringify(collection));
+      
+    }
+
+    if (callback != null) {
+      callback(); 
+    }
   }
 
   listar() {
@@ -58,6 +55,15 @@ export class TarefaService {
     }
 
     let collection: any[] = JSON.parse(value);
+
+    collection.forEach(item=>{
+      if(item.tarefa != null){
+        this.codMostrar = true
+      } else {
+        this.codMostrar = false;
+      }
+    });
+
     return collection;
   }
 
@@ -95,7 +101,6 @@ export class TarefaService {
           item.feito = tarefa.feito
         }
       });
-      
 
       localStorage.setItem(this.key, JSON.stringify(collection));
     }
@@ -108,8 +113,6 @@ export class TarefaService {
 
     let value = localStorage.getItem(this.key);
 
-    console.log(value)
-
     if (value == null || value == undefined) {
       return;
     }
@@ -117,22 +120,49 @@ export class TarefaService {
     else {
       let collection: any[] = JSON.parse(value);
       
-      console.log(collection);
-
       collection.forEach(item=>{
-        // console.log('item ==>' + item)
-        console.log('item ==>' + (item.codigo))
-        console.log('tarefa ==>' + tarefa.codigo)
+
+
         if(item.codigo == tarefa.codigo){
-          console.log("entrou")
-          item.tarefa = tarefa.tarefa
-        } else{
-          console.log("n entrou")
-        }
+          
+          if(tarefa.tarefa == null || tarefa.tarefa == ''){
+            return;
+          }else{
+            item.tarefa = tarefa.tarefa
+          }
+
+          if(tarefa.quantidade == null || tarefa.quantidade == ''){
+            return;
+          }else{
+            item.quantidade = tarefa.quantidade
+          }
+        
+        } 
       });
       
       localStorage.setItem(this.key, JSON.stringify(collection));
     }
+
+    if (callback != null) {
+      callback();
+    }
+  }
+  excluirTodos(callback = null) {
+    let value = localStorage.getItem(this.key);
+
+    if (value == null || value == undefined) {
+      return;
+    }
+
+    let collection: any[] = JSON.parse(value);
+
+    while(collection.length > 0){
+      collection.pop();
+    }
+
+    collection = [{"codigo":0,"tarefa": null,"quantidade": null,"feito":false}];
+
+    localStorage.setItem(this.key, JSON.stringify(collection));
 
     if (callback != null) {
       callback();
