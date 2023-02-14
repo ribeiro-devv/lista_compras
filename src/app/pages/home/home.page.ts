@@ -60,6 +60,9 @@ export class HomePage {
         }, {
           text: 'Salvar',
           handler: async (tarefa) => {
+              if(tarefa.quantidade == null || tarefa.quantidade == undefined || tarefa.quantidade == '' ){
+                tarefa.quantidade = 1;
+              }
               if(tarefa.tarefa == null || tarefa.tarefa == undefined || tarefa.tarefa == '' ){
                 const actionSheet = this.actionSheetCtrl.create({
                   header: 'O nome do Produto não pode estar vazio',
@@ -118,7 +121,6 @@ export class HomePage {
           type: 'number',
           value: tarefa.codigo,
           disabled: true
-
         },
         {
           name: 'tarefa',
@@ -251,5 +253,26 @@ export class HomePage {
       ]
     });
     await alert.present();
+  }
+  async showPix() {
+    const alerta = await this.alertCtrl.create({
+      header: 'Quer Doar?',
+      subHeader: 'Ajude a manter esse projeto no ar!',
+      message: 'Pix: matheus.ribeiro6611@gmail.com &#10084;&#65039;',
+      mode: 'ios',
+      buttons: [{
+          id:'teste',
+          text: 'Copiar chave Pix',
+          handler(value) {
+            setTimeout(()=>{
+            value = 'matheus.ribeiro6611@gmail.com'
+            let btn = document.querySelector('#teste');
+            btn.textContent = "Copiado"
+            }, -1000)
+          },
+        }
+      ]
+    });
+    await alerta.present();
   }
 }

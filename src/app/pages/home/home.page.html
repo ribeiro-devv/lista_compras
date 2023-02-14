@@ -16,8 +16,6 @@
         <ion-label>
             <h2 *ngIf="item.feito==true && item.tarefa!=null"><del><strong>{{item.tarefa}}</strong></del></h2>
             <h2 *ngIf="item.feito==false && item.tarefa!=null"><strong>{{item.tarefa}}</strong></h2>
-            <p class="text-quantidade" *ngIf="item.feito==false && item.tarefa!=null">Código: {{item.codigo}}</p>
-            <p class="text-quantidade" *ngIf="item.feito==true && item.tarefa!=null">Código: {{item.codigo}}</p>
             <p class="text-quantidade" *ngIf="item.feito==false && item.tarefa!=null">Quantidade: {{item.quantidade}}</p>
             <p class="text-quantidade" *ngIf="item.feito==true && item.tarefa!=null">Quantidade: {{item.quantidade}}</p>
             <p class="text-p" *ngIf="item.feito==false && item.tarefa!=null">Pendente</p>
@@ -33,7 +31,12 @@
   </ion-list>
 
   <!-- fab placed to the top end -->
-  <ion-fab vertical="bottom" horizontal="end" vertical="center" slot="fixed">
+  <ion-fab vertical="bottom" horizontal="end" vertical="top" slot="fixed">
+    <ion-fab-button (click)="showPix()" color="success" class="animate__animated animate__bounce">
+      <ion-icon name="cash-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+  <ion-fab vertical="bottom" horizontal="end" vertical="center" slot="fixed" *ngIf="tarefaCollection.length <= 1">
     <ion-fab-button (click)="showArray()" color="success" class="animate__animated animate__bounce">
       <ion-icon name="information-outline"></ion-icon>
     </ion-fab-button>
