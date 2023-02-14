@@ -258,17 +258,24 @@ export class HomePage {
     const alerta = await this.alertCtrl.create({
       header: 'Quer Doar?',
       subHeader: 'Ajude a manter esse projeto no ar!',
-      message: 'Pix: matheus.ribeiro6611@gmail.com &#10084;&#65039;',
+      message: '&#128591; <br> <br> Pix:',
       mode: 'ios',
+      inputs: [
+        {
+          id: 'pix',
+          value:'matheus.ribeiro6611@gmail.com',
+          disabled: true
+        }
+      ],
       buttons: [{
-          id:'teste',
+          id:'btn-pix',
           text: 'Copiar chave Pix',
-          handler(value) {
-            setTimeout(()=>{
-            value = 'matheus.ribeiro6611@gmail.com'
-            let btn = document.querySelector('#teste');
+          handler() {
+            let chave = 'matheus.ribeiro6611@gmail.com'
+            navigator.clipboard.writeText(chave);
+            let btn = document.querySelector('#btn-pix');
             btn.textContent = "Copiado"
-            }, -1000)
+            
           },
         }
       ]
