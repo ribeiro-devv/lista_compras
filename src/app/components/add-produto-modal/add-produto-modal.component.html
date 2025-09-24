@@ -1,0 +1,32 @@
+<div class="modal-header-modern">
+  <h2 class="modal-title-modern">Adicionar Produto</h2>
+</div>
+<div class="form-modern">
+  <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
+    <ion-input
+      class="form-input-modern"
+      formControlName="tarefa"
+      type="text"
+      placeholder="Nome do Produto"
+    ></ion-input>
+    <ion-input
+      class="form-input-modern"
+      formControlName="quantidade"
+      type="number"
+      min="1"
+      placeholder="Quantidade"
+    ></ion-input>
+    <ion-input
+      class="form-input-modern"
+      formControlName="valorUnitario"
+      type="text"
+      inputmode="decimal"
+      placeholder="Valor Unitário"
+      (ionInput)="formatarMoeda($event)"
+    ></ion-input>
+    <div class="modal-footer">
+      <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
+      <button type="submit" class="modal-button-save" [disabled]="produtoForm.invalid">Salvar</button>
+    </div>
+  </form>
+</div>

@@ -7,48 +7,104 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-list class="animate__animated animate__bounceInUp">
-    <ion-item-sliding *ngFor="let item of tarefaCollection">
-      <ion-item *ngIf="tarefaCollection.length <= 1 && item.tarefa==null">
-        <ion-label>Não há Produtos</ion-label>
-      </ion-item>
-      <ion-item *ngIf="item.tarefa!=null" (click)="openActions(item)">
+  
+  <!-- Mensagem quando não há produtos -->
+  <div *ngIf="tarefaCollection.length === 0" class="empty-state">
+    <ion-card>
+      <ion-card-content class="ion-text-center">
+        <ion-icon name="basket-outline" size="large" color="medium"></ion-icon>
+        <h2>Lista Vazia</h2>
+        <p>Sua lista de compras está vazia. Adicione alguns produtos para começar!</p>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Lista de produtos -->
+  <ion-list class="animate__animated animate__bounceInUp" *ngIf="tarefaCollection.length > 0">
+    <ion-item-sliding *ngFor="let item of tarefaCollection; trackBy: trackByFn">
+      <ion-item (click)="openActions(item)">
         <ion-label>
-            <h2 *ngIf="item.feito==true && item.tarefa!=null"><del><strong>{{item.tarefa}}</strong></del></h2>
-            <h2 *ngIf="item.feito==false && item.tarefa!=null"><strong>{{item.tarefa}}</strong></h2>
-            <p class="text-quantidade" *ngIf="item.feito==false && item.tarefa!=null">Quantidade: {{item.quantidade}}</p>
-            <p class="text-quantidade" *ngIf="item.feito==true && item.tarefa!=null">Quantidade: {{item.quantidade}}</p>
-            <p class="text-p" *ngIf="item.feito==false && item.tarefa!=null">Pendente</p>
-            <p class="text-p" *ngIf="item.feito==true && item.tarefa!=null">Comprado</p>
+          <h2 [class.completed]="item.feito">
+            <strong>{{item.tarefa}}</strong>
+          </h2>
+          <div class="item-details">
+            <p class="text-quantidade">Qtd: {{item.quantidade}}</p>
+            <p class="text-valor" *ngIf="item.valorUnitario > 0">
+              Unit: {{formatarMoeda(item.valorUnitario)}}
+            </p>
+            <p class="text-subtotal" *ngIf="item.valorUnitario > 0">
+              <strong>Subtotal: {{formatarMoeda(calcularSubtotal(item))}}</strong>
+            </p>
+          </div>
+          <p class="text-p" [ngClass]="{'status-success': item.feito, 'status-pending': !item.feito}">
+            {{item.feito ? 'Comprado' : 'Pendente'}}
+          </p>
         </ion-label>
-          <ion-icon slot="start" name="information-circle" color="danger" *ngIf="!item.feito && item.tarefa!=null"></ion-icon>
-          <ion-icon slot="start" name="checkmark-circle" color="success" *ngIf="item.feito && item.tarefa!=null"></ion-icon>
+        <ion-icon 
+          slot="start" 
+          [name]="item.feito ? 'checkmark-circle' : 'information-circle'" 
+          [color]="item.feito ? 'success' : 'danger'">
+        </ion-icon>
       </ion-item>
-      <ion-item-options side="end" *ngIf="item.tarefa!=null">
-        <ion-item-option color="danger" (click)="delete(item)">Excluir</ion-item-option>
+      
+      <ion-item-options side="end">
+        <ion-item-option color="danger" (click)="delete(item)">
+          <ion-icon name="trash-outline"></ion-icon>
+          Excluir
+        </ion-item-option>
       </ion-item-options>
     </ion-item-sliding>
   </ion-list>
 
-  <!-- fab placed to the top end -->
-  <ion-fab vertical="bottom" horizontal="end" vertical="top" slot="fixed">
-    <ion-fab-button (click)="showPix()" color="success" class="animate__animated animate__bounce">
+  <!-- Rodapé com totais -->
+  <ion-card *ngIf="tarefaCollection.length > 0 && getTotalGeral() > 0" class="totals-card">
+    <ion-card-header>
+      <ion-card-title class="totals-title">
+        <ion-icon name="calculator-outline"></ion-icon>
+        Resumo dos Gastos
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content class="totals-content">
+      <!-- <div class="total-row">
+        <span class="total-label">Pendente:</span>
+        <span class="total-value pending">{{formatarMoeda(getTotalPendente())}}</span>
+      </div> -->
+      <!-- <div class="total-row">
+        <span class="total-label">Já Comprado:</span>
+        <span class="total-value success">{{formatarMoeda(getTotalComprado())}}</span>
+      </div> -->
+      <ion-item class="total-geral">
+        <ion-label>
+          <h2><strong>Total Comprado</strong></h2>
+        </ion-label>
+        <ion-note slot="end" class="total-geral-value">
+          <strong>{{formatarMoeda(getTotalComprado())}}</strong>
+        </ion-note>
+      </ion-item>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Floating Action Buttons -->
+  
+  <!-- Botão PIX (topo) -->
+  <ion-fab vertical="top" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="showPix()" color="success" class="animate__animated animate__bounce" size="small">
       <ion-icon name="cash-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>
-  <ion-fab vertical="bottom" horizontal="end" vertical="center" slot="fixed" *ngIf="tarefaCollection.length <= 1">
-    <ion-fab-button (click)="showArray()" color="success" class="animate__animated animate__bounce">
-      <ion-icon name="information-outline"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed" style="margin-bottom:60px;">
+  
+  <!-- Botão Adicionar (principal) -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="showAdd()" color="primary" class="animate__animated animate__bounce">
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="showExclusion()" color="danger" class="animate__animated animate__bounce">
+  
+  <!-- Botão Excluir Todos (só aparece quando há itens) -->
+  <ion-fab vertical="bottom" horizontal="start" slot="fixed" *ngIf="tarefaCollection.length > 0">
+    <ion-fab-button (click)="showExclusion()" color="danger" class="animate__animated animate__bounce" size="small">
       <ion-icon name="trash-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>
+
 </ion-content>

@@ -37,3 +37,176 @@
 .border{
   border: 2px solid red;
 }
+
+// Estilo para itens completados
+.completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+// Estado vazio
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  
+  ion-card {
+    max-width: 300px;
+    margin: 20px;
+    
+    ion-icon {
+      margin-bottom: 16px;
+    }
+    
+    h2 {
+      margin: 8px 0;
+      color: var(--ion-color-medium);
+    }
+    
+    p {
+      color: var(--ion-color-medium);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  }
+}
+
+// Melhorias nos textos
+.text-quantidade {
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  margin: 4px 0 !important;
+}
+
+.text-valor {
+  font-size: 13px;
+  color: var(--ion-color-medium);
+  margin: 2px 0 !important;
+}
+
+.text-subtotal {
+  font-size: 14px;
+  color: var(--ion-color-dark);
+  margin: 4px 0 !important;
+  
+  strong {
+    color: var(--ion-color-primary);
+  }
+}
+
+.item-details {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.text-p {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  
+  &.status-success {
+    color: var(--ion-color-success);
+  }
+  
+  &.status-pending {
+    color: var(--ion-color-warning);
+  }
+}
+
+// Estilos para o card de totais
+.totals-card {
+  margin: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
+  .totals-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    color: var(--ion-color-primary);
+    
+    ion-icon {
+      font-size: 20px;
+    }
+  }
+  
+  .totals-content {
+    padding-top: 0;
+  }
+  
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ion-color-light);
+    
+    &:last-of-type {
+      border-bottom: none;
+      margin-bottom: 8px;
+    }
+    
+    .total-label {
+      font-size: 14px;
+      color: var(--ion-color-dark);
+    }
+    
+    .total-value {
+      font-weight: 600;
+      
+      &.pending {
+        color: var(--ion-color-warning);
+      }
+      
+      &.success {
+        color: var(--ion-color-success);
+      }
+    }
+  }
+  
+  .total-geral {
+    --background: var(--ion-color-light);
+    --border-radius: 8px;
+    margin-top: 8px;
+    
+    .total-geral-value {
+      font-size: 18px;
+      color: var(--ion-color-primary);
+    }
+  }
+}
+
+// Animações personalizadas
+@keyframes slideInUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+ion-list {
+  animation: slideInUp 0.5s ease-out;
+}
+
+// Espaçamento dos FABs
+// ion-fab[vertical="bottom"][horizontal="start"] {
+//   --ion-safe-area-bottom: 20px;
+//   margin-bottom: 160px; // Espaço para o card de totais
+// }
+
+// ion-fab[vertical="bottom"][horizontal="end"] {
+//   margin-bottom: 160px; // Espaço para o card de totais
+// }
+
+// ion-fab[vertical="top"][horizontal="end"] {
+//   --ion-safe-area-top: 20px;
+// }
+

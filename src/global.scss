@@ -25,3 +25,36 @@
 @import "~@ionic/angular/css/text-transformation.css";
 @import "~@ionic/angular/css/flex-utils.css";
 
+.hidden-input {
+    display: none !important;
+}
+
+ion-modal.add-produto-modal {
+  --width: auto;
+  --max-width: 350px;
+  --height: auto;
+  --max-height: 80vh; /* Altura máxima relativa à viewport */
+  --border-radius: 16px;
+  --box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  --background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+ion-modal.add-produto-modal::part(content) {
+  border-radius: 16px;
+  overflow-y: auto;
+  padding: 16px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  ion-modal.add-produto-modal {
+    --width: auto; /* Aumenta a largura em telas muito pequenas */
+    --max-height: auto;
+    --background-color: red !important;
+  }
+}

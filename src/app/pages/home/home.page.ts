@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
-import { ActionSheetController, AlertController, LoadingController } from '@ionic/angular';
+import { ActionSheetController, AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { readTask } from 'ionicons/dist/types/stencil-public-runtime';
 import { from } from 'rxjs';
 import { TarefaService } from 'src/app/services/tarefa.service';
+import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/add-produto-modal.component';
+import { ModalController } from '@ionic/angular';
+import { ReactiveFormsModule } from '@angular/forms';
+import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -16,7 +20,9 @@ export class HomePage {
   constructor(
     private alertCtrl: AlertController,
     private tarefaService: TarefaService,
-    private actionSheetCtrl: ActionSheetController
+    private actionSheetCtrl: ActionSheetController,
+    private toastCtrl: ToastController, // Adicione esta importação
+    private modalCtrl: ModalController
   ) { }
 
   ionViewDidEnter() {
@@ -27,80 +33,120 @@ export class HomePage {
     this.tarefaCollection = this.tarefaService.listar();
   }
 
-  async showAdd() {
-    const alert = await this.alertCtrl.create({
-      header: 'Produto',
-      mode: 'ios',
-      inputs: [
-        {
-          name: 'codigo',
-          type: 'number',
-          placeholder: 'Código',
-          disabled: true
-        },
-        {
-          name: 'tarefa',
-          type: 'text',
-          placeholder: 'Nome do Produto',
-        },
-        {
-          name: 'quantidade',
-          type: 'number',
-          placeholder: 'Quantidade',
-        }
-
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'secondary',
-          handler: () => {
-          }
-        }, {
-          text: 'Salvar',
-          handler: async (tarefa) => {
-              if(tarefa.quantidade == null || tarefa.quantidade == undefined || tarefa.quantidade == '' ){
-                tarefa.quantidade = 1;
-              }
-              if(tarefa.tarefa == null || tarefa.tarefa == undefined || tarefa.tarefa == '' ){
-                const actionSheet = this.actionSheetCtrl.create({
-                  header: 'O nome do Produto não pode estar vazio',
-                  mode: 'ios',
-                  buttons: [
-                    {
-                      text: 'OK',
-                      icon: 'close',
-                      role: 'cancel',
-                    }
-                  ],
-                });
-                (await actionSheet).present();
-              } else{
-                this.tarefaService.salvar(tarefa, () => {
-                this.listarTarefa();
-                });
-
-              }
-          }
-        }
-      ]
-    });
-    await alert.present();
+  // Método para otimizar o *ngFor
+  trackByFn(index: number, item: any) {
+    return item.codigo ? item.codigo : index;
   }
-  async delete(item) {
+
+  async showAdd() {
+    const modal = await this.modalCtrl.create({
+      component: AddProdutoModalComponent,
+      componentProps: {},
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
+    });
+  
+    modal.onDidDismiss().then((result) => {
+      if (result.role === 'confirm') {
+        const dados = result.data;
+        // Validação
+        if (!dados.tarefa || dados.tarefa.trim() === '') {
+          this.showSimpleAlert('O nome do produto não pode estar vazio');
+          return;
+        }
+  
+        // Define quantidade padrão
+        if (!dados.quantidade || dados.quantidade <= 0) {
+          dados.quantidade = 1;
+        }
+  
+        // Define valor unitário padrão
+        if (!dados.valorUnitario || dados.valorUnitario < 0) {
+          dados.valorUnitario = 0;
+        }
+  
+        this.tarefaService.salvar(dados, () => {
+          this.listarTarefa();
+        });
+      }
+    });
+  
+    await modal.present();
+  }
+
+  // async showAdd() {
+  //   const alert = await this.alertCtrl.create({
+  //     header: 'Novo Produto',
+  //     mode: 'ios',
+  //     inputs: [
+  //       {
+  //         name: 'tarefa',
+  //         type: 'text',
+  //         placeholder: 'Nome do Produto',
+  //       },
+  //       {
+  //         name: 'quantidade',
+  //         type: 'number',
+  //         placeholder: 'Quantidade'
+  //       },
+  //       {
+  //         name: 'valorUnitario',
+  //         type: 'text',
+  //         placeholder: 'Valor Unitário (R$)',
+  //         attributes: { 
+  //           inputmode: 'decimal' 
+  //         }
+  //       }
+  //     ],
+  //     buttons: [
+  //       {
+  //         text: 'Cancelar',
+  //         role: 'cancel',
+  //         cssClass: 'secondary'
+  //       },
+  //       {
+  //         text: 'Salvar',
+  //         handler: async (dados) => {
+  //           // Validação
+  //           if (!dados.tarefa || dados.tarefa.trim() === '') {
+  //             this.showSimpleAlert('O nome do produto não pode estar vazio');
+  //             return false;
+  //           }
+
+  //           // Define quantidade padrão
+  //           if (!dados.quantidade || dados.quantidade <= 0) {
+  //             dados.quantidade = 1;
+  //           };
+
+  //           // Define valor unitário padrão
+  //           if (!dados.valorUnitario || dados.valorUnitario < 0) {
+  //             dados.valorUnitario = 0;
+  //           }
+
+  //           this.tarefaService.salvar(dados, () => {
+  //             this.listarTarefa();
+  //           });
+  //         }
+  //       }
+  //     ]
+  //   });
+  //   await alert.present();
+  // }
+
+  async delete(item: any) {
     const alert = await this.alertCtrl.create({
-      header: 'Excluir Produto?',
+      header: 'Confirmar Exclusão',
+      message: `Deseja excluir "${item.tarefa}" da lista?`,
       mode: 'ios',
       buttons: [
         {
           text: 'Cancelar',
           role: 'cancel',
-          cssClass: 'secondary',
-          handler: () => {
-          }
-        }, {
+          cssClass: 'secondary'
+        },
+        {
           text: 'Excluir',
+          cssClass: 'danger',
           handler: () => {
             this.tarefaService.excluir(item, () => {
               this.listarTarefa();
@@ -111,123 +157,163 @@ export class HomePage {
     });
     await alert.present();
   }
-  async editar(tarefa) {
-    const alert = await this.alertCtrl.create({
-      header: 'Produto',
-      mode: 'ios',
-      inputs: [
-        {
-          name: 'codigo',
-          type: 'number',
-          value: tarefa.codigo,
-          disabled: true
-        },
-        {
-          name: 'tarefa',
-          type: 'text',
-          value: tarefa.tarefa
-        },
-        {
-          name: 'quantidade',
-          type: 'number',
-          value: tarefa.quantidade,
-        }
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'secondary',
-          handler: () => {
-          }
-        }, {
-          text: 'Salvar',
-          handler: (tarefa) => {
-            this.tarefaService.edicao(tarefa, () => {
-              this.listarTarefa();
-            });
-          }
-        }
-      ]
+
+  async editar(tarefa: any) {
+    const modal = await this.modalCtrl.create({
+      component: EditProdutoModalComponent,
+      componentProps: { tarefa },
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
     });
-    await alert.present();
+
+    modal.onDidDismiss().then((result) => {
+      if (result.role === 'confirm') {
+        const dadosEditados = result.data;
+        if (!dadosEditados.tarefa || dadosEditados.tarefa.trim() === '') {
+          this.showSimpleAlert('O nome do produto não pode estar vazio');
+          return;
+        }
+        // Garante que o código da tarefa original seja mantido
+        dadosEditados.codigo = tarefa.codigo; // Preserva o código original
+        this.tarefaService.edicao(dadosEditados, () => {
+          this.listarTarefa(); // Atualiza a lista após a edição
+        });
+      }
+    });
+
+    await modal.present();
   }
+
+  // async editar(tarefa: any) {
+  //   const alert = await this.alertCtrl.create({
+  //     header: 'Editar Produto',
+  //     mode: 'ios',
+  //     inputs: [
+  //       {
+  //         name: 'codigo',
+  //         type: 'number',
+  //         value: tarefa.codigo,
+  //         disabled: true,
+  //         cssClass: 'hidden-input'
+  //       },
+  //       {
+  //         name: 'tarefa',
+  //         type: 'text',
+  //         value: tarefa.tarefa,
+  //         placeholder: 'Nome do Produto'
+  //       },
+  //       {
+  //         name: 'quantidade',
+  //         type: 'number',
+  //         value: tarefa.quantidade,
+  //         placeholder: 'Quantidade'
+  //       },
+  //       {
+  //         name: 'valorUnitario',
+  //         type: 'number',
+  //         value: tarefa.valorUnitario,
+  //         attributes: {
+  //           step: '0.01'
+  //         }
+  //       }
+        
+  //     ],
+  //     buttons: [
+  //       {
+  //         text: 'Cancelar',
+  //         role: 'cancel',
+  //         cssClass: 'secondary'
+  //       },
+  //       {
+  //         text: 'Salvar',
+  //         handler: (dadosEditados) => {
+  //           if (!dadosEditados.tarefa || dadosEditados.tarefa.trim() === '') {
+  //             this.showSimpleAlert('O nome do produto não pode estar vazio');
+  //             return false;
+  //           }
+            
+  //           this.tarefaService.edicao(dadosEditados, () => {
+  //             this.listarTarefa();
+  //           });
+  //         }
+  //       }
+  //     ]
+  //   });
+  //   await alert.present();
+  // }
+
   async openActions(tarefa: any) {
-    if(tarefa.feito == true){
-      const actionSheet = await this.actionSheetCtrl.create({
-        header: 'O QUE DESEJA FAZER?',
-        mode: 'ios',
-        buttons: [
-          {
-            text: tarefa.feito ? 'Colocar como pendente' : 'Marcar como realizado',
-            icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
-            handler: () => {
-              tarefa.feito = !tarefa.feito
-  
-              this.tarefaService.atualizar(tarefa, () => {
-                this.listarTarefa();
-              });
-            },
-          },
-          {
-            text: 'Cancelar',
-            icon: 'close',
-            role: 'cancel',
-            handler: () => {
-            }
-          }
-        ],
+    const buttons = [];
+
+    // Botão para marcar/desmarcar como concluído
+    buttons.push({
+      text: tarefa.feito ? 'Marcar como Pendente' : 'Marcar como Comprado',
+      icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
+      handler: () => {
+        if (!tarefa.feito) {
+          // Se está marcando como COMPRADO, pedir o valor unitário
+          this.solicitarValorUnitario(tarefa);
+        } else {
+          // Se está desmarcando (voltando para pendente), não pedir valor
+          tarefa.feito = !tarefa.feito;
+          this.tarefaService.atualizar(tarefa, () => {
+            this.listarTarefa();
+          });
+        }
+      }
+    });
+
+    // Botão para editar (só se não estiver concluído)
+    if (!tarefa.feito) {
+      buttons.push({
+        text: 'Editar Produto',
+        icon: 'pencil',
+        handler: () => {
+          this.editar(tarefa);
+        }
       });
-      await actionSheet.present();
-    } else{
-      const actionSheet = await this.actionSheetCtrl.create({
-        header: 'O QUE DESEJA FAZER?',
-        mode: 'ios',
-        buttons: [
-          {
-            text: 'Editar Produto',
-            icon: 'pencil',
-            handler: () => {
-              this.editar(tarefa);
-            },
-          },
-          {
-            text: tarefa.feito ? 'Colocar como pendente' : 'Marcar como realizado',
-            icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
-            handler: () => {
-              tarefa.feito = !tarefa.feito
-  
-              this.tarefaService.atualizar(tarefa, () => {
-                this.listarTarefa();
-              });
-            },
-          },
-          {
-            text: 'Cancelar',
-            icon: 'close',
-            role: 'cancel',
-            handler: () => {
-            }
-          }
-        ],
-      });
-      await actionSheet.present();
     }
-    
+
+    buttons.push({
+      text: 'Excluir Produto',
+      icon: 'trash',
+      handler: () => {
+        this.delete(tarefa);
+      }
+    });
+
+    // Botão cancelar
+    buttons.push({
+      text: 'Cancelar',
+      icon: 'close',
+      role: 'cancel'
+    });
+
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: 'O que deseja fazer?',
+      mode: 'ios',
+      buttons: buttons
+    });
+
+    await actionSheet.present();
   }
+
+  
+
   async showExclusion() {
     const alert = await this.alertCtrl.create({
-      header: 'Excluir Todos Produtos?',
+      header: 'Excluir Todos os Produtos?',
+      message: 'Esta ação não pode ser desfeita.',
       mode: 'ios',
       buttons: [
         {
           text: 'Cancelar',
           role: 'cancel',
-          cssClass: 'secondary',
-          handler: () => {
-          }
-        }, {
-          text: 'Excluir',
+          cssClass: 'secondary'
+        },
+        {
+          text: 'Excluir Tudo',
+          cssClass: 'danger',
           handler: () => {
             this.tarefaService.excluirTodos(() => {
               this.listarTarefa();
@@ -238,15 +324,26 @@ export class HomePage {
     });
     await alert.present();
   }
-  async showArray() {
+
+  async showPix() {
     const alert = await this.alertCtrl.create({
-      header: 'Iniciar',
+      header: 'Quer Doar?',
+      subHeader: 'Ajude a manter esse projeto no ar!',
+      message: '🙏 <br><br> Pix:',
       mode: 'ios',
-      buttons: [{
-          text: 'Click aqui para Iniciar',
+      inputs: [
+        {
+          value: 'matheus.ribeiro6611@gmail.com',
+          disabled: true
+        }
+      ],
+      buttons: [
+        {
+          text: 'Copiar chave Pix',
           handler: () => {
-            this.tarefaService.setArray(() => {
-              this.listarTarefa();
+            const chave = 'matheus.ribeiro6611@gmail.com';
+            navigator.clipboard.writeText(chave).then(() => {
+              this.showSimpleAlert('Chave PIX copiada!');
             });
           }
         }
@@ -254,32 +351,87 @@ export class HomePage {
     });
     await alert.present();
   }
-  async showPix() {
-    const alerta = await this.alertCtrl.create({
-      header: 'Quer Doar?',
-      subHeader: 'Ajude a manter esse projeto no ar!',
-      message: '&#128591; <br> <br> Pix:',
+
+  // Método auxiliar para alertas simples
+  private async showSimpleAlert(message: string) {
+    const alert = await this.alertCtrl.create({
+      header: 'Atenção',
+      message: message,
+      mode: 'ios',
+      buttons: ['OK']
+    });
+    await alert.present();
+  }
+
+  // Métodos para cálculos de valores
+  getTotalGeral(): number {
+    return this.tarefaService.calcularTotalGeral();
+  }
+
+  getTotalComprado(): number {
+    return this.tarefaService.calcularTotalComprado();
+  }
+
+  // getTotalPendente(): number {
+  //   return this.tarefaService.calcularTotalPendente();
+  // }
+
+  // Método para formatar valores em moeda
+  formatarMoeda(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor);
+  }
+
+  // Método para calcular subtotal do item
+  calcularSubtotal(item: any): number {
+    const quantidade = parseFloat(item.quantidade) || 0;
+    const valorUnitario = parseFloat(item.valorUnitario) || 0;
+    return quantidade * valorUnitario;
+  }
+
+  async solicitarValorUnitario(tarefa: any) {
+    const alert = await this.alertCtrl.create({
+      header: 'Valor Unitário',
+      message: `Informe o valor unitário de "${tarefa.tarefa}"`,
       mode: 'ios',
       inputs: [
         {
-          id: 'pix',
-          value:'matheus.ribeiro6611@gmail.com',
-          disabled: true
+          name: 'valorUnitario',
+          type: 'number',
+          placeholder: 'R$ 0,00',
+          attributes: {
+            step: '0.01',
+            min: '0'
+          },
+          value: tarefa.valorUnitario
         }
       ],
-      buttons: [{
-          id:'btn-pix',
-          text: 'Copiar chave Pix',
-          handler() {
-            let chave = 'matheus.ribeiro6611@gmail.com'
-            navigator.clipboard.writeText(chave);
-            let btn = document.querySelector('#btn-pix');
-            btn.textContent = "Copiado"
-            
-          },
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Confirmar',
+          handler: (dados) => {
+            if (dados.valorUnitario !== undefined && dados.valorUnitario !== '') {
+              // Marcar como comprado E salvar o valor unitário
+              tarefa.feito = true;
+              tarefa.valorUnitario = parseFloat(dados.valorUnitario);
+              
+              this.tarefaService.atualizar(tarefa, () => {
+                this.listarTarefa();
+              });
+            } else {
+              this.showSimpleAlert('Por favor, informe o valor unitário');
+              return false;
+            }
+          }
         }
       ]
     });
-    await alerta.present();
+    await alert.present();
   }
 }

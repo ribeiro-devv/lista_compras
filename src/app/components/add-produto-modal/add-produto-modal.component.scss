@@ -1,0 +1,79 @@
+.modal-header-modern {
+  background-color: #28a745;
+  color: #ffffff;
+  text-align: center;
+  padding: 12px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.modal-title-modern {
+  font-size: 1.1rem; /* Tamanho relativo */
+  font-weight: 500;
+  margin: 0;
+}
+
+@media (max-width: 320px) {
+  .modal-title-modern {
+    font-size: 1rem;
+  }
+}
+
+.form-modern {
+  padding: 16px;
+  width: 100%;
+}
+
+.form-input-modern {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 1rem;
+  width: 100%;
+  margin-bottom: 12px;
+  box-sizing: border-box; /* Garante que padding não aumente a largura */
+}
+
+@media (max-width: 360px) {
+  .form-input-modern {
+    font-size: 0.9rem;
+    padding: 6px;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.modal-button-cancel {
+  color: #fff;
+  background-color: #ff4444;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-button-cancel:hover, .modal-button-save:hover {
+  transition: ease-in 0.3s;
+  scale: 1.1;
+}
+
+.modal-button-save {
+  color: #fff;
+  background-color: #28a745;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+@media (max-width: 360px) {
+  .modal-button-cancel, .modal-button-save {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+}
