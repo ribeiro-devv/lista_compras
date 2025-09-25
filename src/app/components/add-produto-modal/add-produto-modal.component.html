@@ -4,7 +4,7 @@
 <div class="form-modern">
   <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
     <ion-input
-      class="form-input-modern"
+      #nomeProdutoInput class="form-input-modern"
       formControlName="tarefa"
       type="text"
       placeholder="Nome do Produto"
@@ -13,7 +13,7 @@
       class="form-input-modern"
       formControlName="quantidade"
       type="number"
-      min="1"
+      min="0"
       placeholder="Quantidade"
     ></ion-input>
     <ion-input

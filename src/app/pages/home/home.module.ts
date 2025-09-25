@@ -7,6 +7,7 @@ import { HomePage } from './home.page';
 import { HomePageRoutingModule } from './home-routing.module';
 import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/add-produto-modal.component';
 import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
+import { ValorUnitarioModalComponent } from 'src/app/components/valor-unitario-modal/valor-unitario-modal.component';
 
 
 @NgModule({
@@ -17,6 +18,6 @@ import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal
     HomePageRoutingModule,
     ReactiveFormsModule,
   ],
-  declarations: [HomePage, AddProdutoModalComponent, EditProdutoModalComponent]
+  declarations: [HomePage, AddProdutoModalComponent, EditProdutoModalComponent, ValorUnitarioModalComponent]
 })
 export class HomePageModule {}

@@ -7,6 +7,7 @@ import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/a
 import { ModalController } from '@ionic/angular';
 import { ReactiveFormsModule } from '@angular/forms';
 import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
+import { ValorUnitarioModalComponent } from 'src/app/components/valor-unitario-modal/valor-unitario-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -55,9 +56,8 @@ export class HomePage {
           return;
         }
   
-        // Define quantidade padrão
         if (!dados.quantidade || dados.quantidade <= 0) {
-          dados.quantidade = 1;
+          dados.quantidade = 0;
         }
   
         // Define valor unitário padrão
@@ -392,46 +392,27 @@ export class HomePage {
   }
 
   async solicitarValorUnitario(tarefa: any) {
-    const alert = await this.alertCtrl.create({
-      header: 'Valor Unitário',
-      message: `Informe o valor unitário de "${tarefa.tarefa}"`,
-      mode: 'ios',
-      inputs: [
-        {
-          name: 'valorUnitario',
-          type: 'number',
-          placeholder: 'R$ 0,00',
-          attributes: {
-            step: '0.01',
-            min: '0'
-          },
-          value: tarefa.valorUnitario
-        }
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        },
-        {
-          text: 'Confirmar',
-          handler: (dados) => {
-            if (dados.valorUnitario !== undefined && dados.valorUnitario !== '') {
-              // Marcar como comprado E salvar o valor unitário
-              tarefa.feito = true;
-              tarefa.valorUnitario = parseFloat(dados.valorUnitario);
-              
-              this.tarefaService.atualizar(tarefa, () => {
-                this.listarTarefa();
-              });
-            } else {
-              this.showSimpleAlert('Por favor, informe o valor unitário');
-              return false;
-            }
-          }
-        }
-      ]
+    const modal = await this.modalCtrl.create({
+      component: ValorUnitarioModalComponent,
+      componentProps: { tarefa },
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
     });
-    await alert.present();
+  
+    modal.onDidDismiss().then((result) => {
+      if (result.role === 'confirm') {
+        const dados = result.data;
+        if (dados.valorUnitario !== undefined && dados.valorUnitario !== null && !isNaN(dados.valorUnitario)) {
+          tarefa.feito = true;
+          tarefa.valorUnitario = dados.valorUnitario;
+          tarefa.quantidade = dados.quantidade
+          this.tarefaService.atualizar(tarefa, () => {
+            this.listarTarefa();
+          });
+        }
+      }
+    });
+  
+    await modal.present();
   }
 }

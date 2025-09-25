@@ -1,0 +1,51 @@
+<div class="modal-header-modern">
+  <h2 class="modal-title-modern">
+    <span>Adicionar Informações {{ tarefa.tarefa }}</span>
+  </h2>
+</div>
+<div>
+  <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
+    <div class="form-group">
+      <div>
+        <span *ngIf="produtoForm.get('quantidade')?.invalid && (produtoForm.get('quantidade')?.touched || produtoForm.get('quantidade')?.dirty)"  class="error-text">
+          Quantidade é obrigatória.
+        </span>
+        <span *ngIf="!(produtoForm.get('quantidade')?.invalid && (produtoForm.get('quantidade')?.touched || produtoForm.get('quantidade')?.dirty))" class="text">
+          Quantidade
+        </span>
+      </div>
+      <ion-input
+        *ngIf="mostrarCampoQuantidade"
+        formControlName="quantidade"
+        type="number"
+        inputmode="numeric"
+        min="1"
+        placeholder="Quantidade"
+        [class.is-invalid]="produtoForm.get('quantidade')?.invalid && (produtoForm.get('quantidade')?.touched || produtoForm.get('quantidade')?.dirty)">
+      </ion-input>
+
+      <div>
+        <span *ngIf="produtoForm.get('valorUnitario')?.invalid && (produtoForm.get('valorUnitario')?.touched || produtoForm.get('valorUnitario')?.dirty)"  class="error-text">
+          Valor Unitário é obrigatório.
+        </span>
+        <span *ngIf="!(produtoForm.get('valorUnitario')?.invalid && (produtoForm.get('valorUnitario')?.touched || produtoForm.get('valorUnitario')?.dirty))" class="text">
+          Valor Unitário
+        </span>
+      </div>
+
+      <ion-input
+        formControlName="valorUnitario"
+        type="text"
+        inputmode="decimal"
+        placeholder="R$ 0,00"
+        (ionInput)="formatarMoeda($event)"
+        [class.is-invalid]="produtoForm.get('valorUnitario')?.invalid && (produtoForm.get('valorUnitario')?.touched || produtoForm.get('valorUnitario')?.dirty)">
+      </ion-input>
+
+      <div class="modal-footer">
+        <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
+        <button type="submit" class="modal-button-save">Confirmar</button>
+      </div>
+    </div>
+  </form>
+</div>

@@ -12,48 +12,58 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
   produtoForm: FormGroup;
 
   // Referência ao primeiro input
-  @ViewChild('nomeProduto', { static: false }) nomeProdutoInput!: IonInput;
+  @ViewChild('nomeProdutoInput', { static: false }) nomeProdutoInput!: IonInput;
 
   constructor(private fb: FormBuilder, private modalCtrl: ModalController) {
     this.produtoForm = this.fb.group({
       tarefa: ['', Validators.required],
-      quantidade: ['', [Validators.required, Validators.min(1)]],
-      valorUnitario: ['', [Validators.required, Validators.min(0)]],
+      quantidade: [null, [Validators.min(0)]],
+      valorUnitario: [null, [Validators.min(0)]], 
     });
   }
 
   ngOnInit() {}
 
   ngAfterViewInit() {
-    // Dá um pequeno delay para o modal abrir antes de setar o foco
     setTimeout(() => {
       this.nomeProdutoInput?.setFocus();
     }, 300);
   }
 
   formatarMoeda(event: any) {
-    let valor = event.target.value.replace(/[^\d]/g, ''); // Remove tudo exceto números
-    if (valor) {
-      const numero = parseFloat(valor) / 100;
-      valor = numero.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-      this.produtoForm.get('valorUnitario')?.setValue(valor, { emitEvent: false });
-    } else {
-      this.produtoForm.get('valorUnitario')?.setValue('0,00', { emitEvent: false });
+    const input = event.target;
+    let value = input.value;
+
+    // Se o campo estiver vazio, define o valor do formulário como null e encerra
+    if (!value) {
+      this.produtoForm.get('valorUnitario')?.setValue(null);
+      return;
     }
+
+    value = value.replace(/\D/g, ''); // Remove tudo que não for dígito
+    const numero = Number(value) / 100; // Converte para número (ex: "1250" -> 12.50)
+
+    // Atualiza o formulário com o número puro
+    this.produtoForm.get('valorUnitario')?.setValue(numero, { emitEvent: false });
+    
+    // Atualiza o campo de input com o valor formatado para o usuário ver
+    input.value = numero.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   }
 
   salvar() {
     if (this.produtoForm.valid) {
       const dados = this.produtoForm.value;
-      // Converte o valor formatado de volta para número
-      dados.valorUnitario = parseFloat(
-        dados.valorUnitario.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.')
-      );
+
+      console.log(dados)
+      
+      if (dados.valorUnitario === null) {
+        dados.valorUnitario = 0;
+      }
+
+      if (dados.quantidade === null) {
+        dados.quantidade = 0;
+      }
+
       this.modalCtrl.dismiss(dados, 'confirm');
     }
   }

@@ -58,3 +58,15 @@ ion-modal.add-produto-modal::part(content) {
     --background-color: red !important;
   }
 }
+
+
+ion-input.is-invalid::part(native) {
+  border: 1px solid red !important;
+  background-color: #ffe6e6 !important;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+ion-input.is-invalid::part(native):focus {
+  box-shadow: 0 0 6px red;
+}
