@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { IonicModule } from '@ionic/angular';
 
-import { ValorUnitarioModalComponent } from './valor-unitario-modal.component';
+import { InformacoesModalComponent } from './informacoes-modal.component';
 
-describe('ValorUnitarioModalComponent', () => {
-  let component: ValorUnitarioModalComponent;
-  let fixture: ComponentFixture<ValorUnitarioModalComponent>;
+describe('InformacoesModalComponent', () => {
+  let component: InformacoesModalComponent;
+  let fixture: ComponentFixture<InformacoesModalComponent>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ValorUnitarioModalComponent ],
+      declarations: [ InformacoesModalComponent ],
       imports: [IonicModule.forRoot()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ValorUnitarioModalComponent);
+    fixture = TestBed.createComponent(InformacoesModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   }));

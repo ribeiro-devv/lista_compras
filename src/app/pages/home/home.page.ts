@@ -7,7 +7,8 @@ import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/a
 import { ModalController } from '@ionic/angular';
 import { ReactiveFormsModule } from '@angular/forms';
 import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
-import { ValorUnitarioModalComponent } from 'src/app/components/valor-unitario-modal/valor-unitario-modal.component';
+import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/informacoes-modal.component';
+import { TourService } from 'src/app/services/tour.service';
 
 @Component({
   selector: 'app-home',
@@ -23,11 +24,23 @@ export class HomePage {
     private tarefaService: TarefaService,
     private actionSheetCtrl: ActionSheetController,
     private toastCtrl: ToastController, // Adicione esta importação
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private tourService: TourService
   ) { }
 
   ionViewDidEnter() {
     this.listarTarefa();
+    this.checkFirstAccess();
+  }
+
+  checkFirstAccess() {
+    // Verificar se é o primeiro acesso e iniciar o tour
+    if (!this.tourService.isTourCompletedOnce()) {
+      // Aguardar um pouco para garantir que a view esteja carregada
+      setTimeout(() => {
+        this.tourService.startTour();
+      }, 1000);
+    }
   }
 
   listarTarefa() {
@@ -60,7 +73,7 @@ export class HomePage {
           dados.quantidade = 0;
         }
   
-        // Define valor unitário padrão
+        console.log(dados.valorUnitario)
         if (!dados.valorUnitario || dados.valorUnitario < 0) {
           dados.valorUnitario = 0;
         }
@@ -247,14 +260,12 @@ export class HomePage {
 
     // Botão para marcar/desmarcar como concluído
     buttons.push({
-      text: tarefa.feito ? 'Marcar como Pendente' : 'Marcar como Comprado',
+      text: tarefa.feito ? 'Remover do Carrinho' : 'Adicionar no Carrinho',
       icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
       handler: () => {
         if (!tarefa.feito) {
-          // Se está marcando como COMPRADO, pedir o valor unitário
           this.solicitarValorUnitario(tarefa);
         } else {
-          // Se está desmarcando (voltando para pendente), não pedir valor
           tarefa.feito = !tarefa.feito;
           this.tarefaService.atualizar(tarefa, () => {
             this.listarTarefa();
@@ -393,7 +404,7 @@ export class HomePage {
 
   async solicitarValorUnitario(tarefa: any) {
     const modal = await this.modalCtrl.create({
-      component: ValorUnitarioModalComponent,
+      component: InformacoesModalComponent,
       componentProps: { tarefa },
       cssClass: 'add-produto-modal',
       backdropDismiss: false
@@ -414,5 +425,13 @@ export class HomePage {
     });
   
     await modal.present();
+  }
+
+  // Método para reiniciar o tour
+  restartTour() {
+    this.tourService.resetTour();
+    setTimeout(() => {
+      this.tourService.startTour();
+    }, 500);
   }
 }

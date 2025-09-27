@@ -3,11 +3,11 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { ModalController } from '@ionic/angular';
 
 @Component({
-  selector: 'app-valor-unitario-modal',
-  templateUrl: './valor-unitario-modal.component.html',
-  styleUrls: ['./valor-unitario-modal.component.scss'],
+  selector: 'app-informacoes-modal',
+  templateUrl: './informacoes-modal.component.html',
+  styleUrls: ['./informacoes-modal.component.scss'],
 })
-export class ValorUnitarioModalComponent implements OnInit {
+export class InformacoesModalComponent implements OnInit {
   @Input() tarefa: any;
   produtoForm: FormGroup;
   
@@ -22,24 +22,28 @@ export class ValorUnitarioModalComponent implements OnInit {
   }
 
   ngOnInit() {
-    // <<< LÓGICA ATUALIZADA
-    // Verifica se a tarefa não tem uma quantidade válida
+    // Se a tarefa não tem quantidade válida, mostra o campo e inicializa vazio
     if (!this.tarefa || !this.tarefa.quantidade || this.tarefa.quantidade <= 0) {
       this.mostrarCampoQuantidade = true;
-      // Adiciona o campo 'quantidade' ao formulário dinamicamente
       this.produtoForm.addControl(
-        'quantidade', 
+        'quantidade',
         new FormControl('', [Validators.required, Validators.min(1)])
       );
+    } else {
+      // Se já existe quantidade, adiciona o campo e preenche
+      this.mostrarCampoQuantidade = true;
+      this.produtoForm.addControl(
+        'quantidade',
+        new FormControl(this.tarefa.quantidade, [Validators.required, Validators.min(1)])
+      );
     }
-    
-    // Preenche o valor unitário se ele já existir
+  
     if (this.tarefa && this.tarefa.valorUnitario) {
       this.produtoForm.patchValue({
         valorUnitario: this.tarefa.valorUnitario,
       });
     }
-
+  
     this.formatarValorInicial();
   }
   
@@ -99,6 +103,8 @@ export class ValorUnitarioModalComponent implements OnInit {
       if (formValue.quantidade) {
         dadosRetorno.quantidade = formValue.quantidade;
       }
+
+      console.log(`DADOS RETORNO >>> ${dadosRetorno}.[0]`)
       
       this.modalCtrl.dismiss(dadosRetorno, 'confirm');
     }

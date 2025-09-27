@@ -1,11 +1,11 @@
 <div class="modal-header-modern">
   <h2 class="modal-title-modern">
-    <span>Adicionar Informações {{ tarefa.tarefa }}</span>
+    <span>Confirmar Informações {{ tarefa.tarefa }}</span>
   </h2>
 </div>
 <div>
   <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
-    <div class="form-group">
+    <!-- <div class="form-group"> -->
       <div>
         <span *ngIf="produtoForm.get('quantidade')?.invalid && (produtoForm.get('quantidade')?.touched || produtoForm.get('quantidade')?.dirty)"  class="error-text">
           Quantidade é obrigatória.
@@ -46,6 +46,6 @@
         <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
         <button type="submit" class="modal-button-save">Confirmar</button>
       </div>
-    </div>
+    <!-- </div> -->
   </form>
 </div>

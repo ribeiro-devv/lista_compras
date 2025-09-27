@@ -1,0 +1,80 @@
+<!-- Overlay escuro para destacar elementos -->
+<div class="tour-overlay" *ngIf="isActive" (click)="skipTour()">
+    <!-- Highlight do elemento atual -->
+    <div class="tour-highlight" *ngIf="currentStep" [style]="getHighlightStyle()"></div>
+  </div>
+  
+  <!-- Tooltip com informações do passo atual -->
+  <div 
+    class="tour-tooltip" 
+    *ngIf="isActive && currentStep" 
+    #tooltip
+    [class]="'tooltip-' + currentStep.position">
+    
+    <!-- Cabeçalho do tooltip -->
+    <div class="tooltip-header">
+      <h3 class="tooltip-title">{{ currentStep.title }}</h3>
+      <div class="tooltip-progress">
+        <span class="progress-text">{{ tourService.currentStepIndex.value + 1 }} de {{ tourService.getAllSteps().length }}</span>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="progress"></div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Conteúdo do tooltip -->
+    <div class="tooltip-content">
+      <p class="tooltip-description">{{ currentStep.description }}</p>
+      
+      <!-- Botão de ação se disponível -->
+      <div class="tooltip-action" *ngIf="currentStep.action && currentStep.action !== 'none'">
+        <ion-button 
+          fill="outline" 
+          size="small" 
+          (click)="executeStepAction()"
+          class="action-button">
+          <ion-icon name="hand-left-outline" slot="start"></ion-icon>
+          {{ currentStep.action === 'click' ? 'Clique aqui' : 'Foque aqui' }}
+        </ion-button>
+      </div>
+    </div>
+  
+    <!-- Controles de navegação -->
+    <div class="tooltip-controls">
+      <div class="control-buttons">
+        <!-- Botão anterior -->
+        <ion-button 
+          fill="clear" 
+          size="small" 
+          (click)="previousStep()"
+          [disabled]="isFirstStep()"
+          class="nav-button">
+          <ion-icon name="chevron-back-outline"></ion-icon>
+          Anterior
+        </ion-button>
+  
+        <!-- Botão próximo -->
+        <ion-button 
+          fill="solid" 
+          size="small" 
+          (click)="nextStep()"
+          class="nav-button primary">
+          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+          {{ isLastStep() ? 'Finalizar' : 'Próximo' }}
+        </ion-button>
+      </div>
+  
+      <!-- Botão pular -->
+      <ion-button 
+        fill="clear" 
+        size="small" 
+        (click)="skipTour()"
+        class="skip-button">
+        <ion-icon name="close-outline"></ion-icon>
+        Pular Tour
+      </ion-button>
+    </div>
+  
+    <!-- Indicador de posição -->
+    <div class="tooltip-arrow" [class]="'arrow-' + currentStep.position"></div>
+  </div>

@@ -77,3 +77,58 @@
     padding: 6px 12px;
   }
 }
+
+
+
+
+
+
+
+.text,
+    .error-text {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 6px;
+    margin-top: 5px;
+    }
+
+    .error-text {
+    color: red;
+    }
+
+    .text {
+    color: #333;
+    font-weight: 500;
+    // margin-top: 5px;
+    }
+
+
+
+
+
+
+:host ::ng-deep ion-input.is-invalid input,
+    :host ::ng-deep ion-input.is-invalid .native-input {
+    border: 1px solid red !important;
+    background-color: #ffe6e6 !important;
+    border-radius: 4px;
+    padding: 8px;
+    }
+
+    :host ::ng-deep ion-input.is-invalid input:focus,
+    :host ::ng-deep ion-input.is-invalid .native-input:focus {
+    box-shadow: 0 0 6px red !important;
+    }
+
+    :host ::ng-deep ion-input input,
+    :host ::ng-deep ion-input .native-input {
+    border: 0.5px solid #5f5f5f !important;
+    background-color: #ffe6e6 !important;
+    border-radius: 4px;
+    padding: 8px;
+    }
+
+    :host ::ng-deep ion-input,
+    :host ::ng-deep ion-input .native-input:focus{
+    box-shadow: 0 0 6px #5f5f5f !important;
+    }

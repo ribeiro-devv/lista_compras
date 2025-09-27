@@ -37,7 +37,7 @@
             </p>
           </div>
           <p class="text-p" [ngClass]="{'status-success': item.feito, 'status-pending': !item.feito}">
-            {{item.feito ? 'Comprado' : 'Pendente'}}
+            {{item.feito ? 'Adicionado no Carrinho' : 'Não Adicionado no Carrinho'}}
           </p>
         </ion-label>
         <ion-icon 
@@ -93,6 +93,13 @@
     </ion-fab-button>
   </ion-fab>
   
+  <!-- Botão Tour (topo esquerdo) -->
+  <ion-fab vertical="top" horizontal="start" slot="fixed">
+    <ion-fab-button (click)="restartTour()" color="tertiary" class="animate__animated animate__bounce" size="small">
+      <ion-icon name="help-circle-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+  
   <!-- Botão Adicionar (principal) -->
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="showAdd()" color="primary" class="animate__animated animate__bounce">
@@ -106,5 +113,8 @@
       <ion-icon name="trash-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>
+
+  <!-- Componente de Tour -->
+  <app-tour-overlay></app-tour-overlay>
 
 </ion-content>

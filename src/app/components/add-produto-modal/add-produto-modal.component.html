@@ -3,27 +3,50 @@
 </div>
 <div class="form-modern">
   <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
+
+    <div>
+      <span *ngIf="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"  class="error-text">
+        Nome do Produto é obrigatório.
+      </span>
+      <span *ngIf="!(produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty))" class="text">
+        Nome do Produto
+      </span>
+    </div>
+
     <ion-input
-      #nomeProdutoInput class="form-input-modern"
+      #nomeProdutoInput
+      class="form-input-modern"
       formControlName="tarefa"
       type="text"
-      placeholder="Nome do Produto"
+      [class.is-invalid]="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"
     ></ion-input>
+
+    <div>
+      <span class="text">
+        Quantidade
+      </span>
+    </div>
+
     <ion-input
       class="form-input-modern"
       formControlName="quantidade"
       type="number"
       min="0"
-      placeholder="Quantidade"
     ></ion-input>
+
+    <div>
+      <span class="text">
+        Valor Unitário
+      </span>
+    </div>
+
     <ion-input
       class="form-input-modern"
       formControlName="valorUnitario"
-      type="text"
       inputmode="decimal"
-      placeholder="Valor Unitário"
       (ionInput)="formatarMoeda($event)"
     ></ion-input>
+
     <div class="modal-footer">
       <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
       <button type="submit" class="modal-button-save" [disabled]="produtoForm.invalid">Salvar</button>

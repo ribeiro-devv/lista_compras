@@ -7,7 +7,8 @@ import { HomePage } from './home.page';
 import { HomePageRoutingModule } from './home-routing.module';
 import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/add-produto-modal.component';
 import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
-import { ValorUnitarioModalComponent } from 'src/app/components/valor-unitario-modal/valor-unitario-modal.component';
+import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/informacoes-modal.component';
+import { TourOverlayComponent } from 'src/app/components/tour-overlay/tour-overlay.component';
 
 
 @NgModule({
@@ -18,6 +19,6 @@ import { ValorUnitarioModalComponent } from 'src/app/components/valor-unitario-m
     HomePageRoutingModule,
     ReactiveFormsModule,
   ],
-  declarations: [HomePage, AddProdutoModalComponent, EditProdutoModalComponent, ValorUnitarioModalComponent]
+  declarations: [HomePage, AddProdutoModalComponent, EditProdutoModalComponent, InformacoesModalComponent, TourOverlayComponent]
 })
 export class HomePageModule {}
