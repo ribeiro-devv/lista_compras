@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ActionSheetController, AlertController } from '@ionic/angular';
+import { ActionSheetController, AlertController, ToastController } from '@ionic/angular';
 import { TarefaService } from 'src/app/services/tarefa.service';
 import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/add-produto-modal.component';
 import { ModalController } from '@ionic/angular';
@@ -7,6 +7,7 @@ import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal
 import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/informacoes-modal.component';
 import { TourService } from 'src/app/services/tour.service';
 import { Router } from '@angular/router';
+import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -23,7 +24,8 @@ export class HomePage {
     private actionSheetCtrl: ActionSheetController,
     private modalCtrl: ModalController,
     private router: Router,
-    private tourService: TourService
+    private tourService: TourService,
+    private toastController: ToastController
   ) { }
 
   ionViewDidEnter() {
@@ -146,59 +148,6 @@ export class HomePage {
     await modal.present();
   }
 
-  async openActions(tarefa: any) {
-    const buttons = [];
-
-    buttons.push({
-      text: tarefa.feito ? 'Remover do Carrinho' : 'Adicionar no Carrinho',
-      icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
-      handler: () => {
-        if (!tarefa.feito) {
-          this.solicitarValorUnitario(tarefa);
-        } else {
-          tarefa.feito = !tarefa.feito;
-          this.tarefaService.atualizar(tarefa, () => {
-            this.listarTarefa();
-          });
-        }
-      }
-    });
-
-    if (!tarefa.feito) {
-      buttons.push({
-        text: 'Editar Produto',
-        icon: 'pencil',
-        handler: () => {
-          this.editar(tarefa);
-        }
-      });
-    }
-
-    buttons.push({
-      text: 'Excluir Produto',
-      icon: 'trash',
-      handler: () => {
-        this.delete(tarefa);
-      }
-    });
-
-    // Botão cancelar
-    buttons.push({
-      text: 'Cancelar',
-      icon: 'close',
-      role: 'cancel'
-    });
-
-    const actionSheet = await this.actionSheetCtrl.create({
-      header: 'O que deseja fazer?',
-      mode: 'ios',
-      buttons: buttons
-    });
-
-    await actionSheet.present();
-  }
-
-  
 
   async showExclusion() {
     const alert = await this.alertCtrl.create({
@@ -252,18 +201,6 @@ export class HomePage {
     await alert.present();
   }
 
-  // Método auxiliar para alertas simples
-  private async showSimpleAlert(message: string) {
-    const alert = await this.alertCtrl.create({
-      header: 'Atenção',
-      message: message,
-      mode: 'ios',
-      buttons: ['OK']
-    });
-    await alert.present();
-  }
-
-  // Métodos para cálculos de valores
   getTotalGeral(): number {
     return this.tarefaService.calcularTotalGeral();
   }
@@ -306,7 +243,7 @@ export class HomePage {
         }
       }
     });
-  
+    // this.showToast(`"${tarefa.tarefa}" adicionado ao carrinho!`, 'success');
     await modal.present();
   }
 
@@ -316,4 +253,166 @@ export class HomePage {
       this.tourService.startTour();
     }, 500);
   }
+
+
+
+
+
+
+  async openActions(tarefa: any) {
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: `Ações para "${tarefa.tarefa}"`,
+      subHeader: tarefa.feito ? 'Item já adicionado ao carrinho' : 'Item não adicionado no carrinho',
+      cssClass: 'custom-action-sheet',
+      mode: 'ios',
+      buttons: [
+        {
+          text: tarefa.feito ? 'Remover do Carrinho' : 'Adicionar ao Carrinho',
+          icon: tarefa.feito ? 'remove-circle' : 'checkmark-circle',
+          cssClass: tarefa.feito ? 'action-remove' : 'action-add',
+          handler: () => {
+            if (!tarefa.feito) {
+              this.adicionarAoCarrinho(tarefa);
+            } else {
+              this.removerDoCarrinho(tarefa);
+            }
+          }
+        },
+        
+        // Editar produto (só se não estiver no carrinho)
+        ...(tarefa.feito ? [] : [{
+          text: 'Editar Produto',
+          icon: 'pencil',
+          cssClass: 'action-edit',
+          handler: () => {
+            this.editar(tarefa);
+          }
+        }]),
+
+        // Ver detalhes
+        {
+          text: 'Ver Detalhes',
+          icon: 'information-circle',
+          cssClass: 'action-info',
+          handler: () => {
+            this.mostrarDetalhes(tarefa);
+          }
+        },
+
+        // Separador visual
+        {
+          text: '',
+          icon: '',
+          cssClass: 'action-separator',
+          handler: () => false
+        },
+
+        // Excluir (sempre no final)
+        {
+          text: 'Excluir Produto',
+          icon: 'trash',
+          cssClass: 'action-delete',
+          handler: () => {
+            this.delete(tarefa);
+          }
+        },
+
+        // Cancelar
+        {
+          text: 'Cancelar',
+          icon: 'close',
+          role: 'cancel',
+          cssClass: 'action-cancel'
+        }
+      ]
+    });
+
+    await actionSheet.present();
+  }
+
+  // Métodos auxiliares para as ações
+  private adicionarAoCarrinho(tarefa: any) {
+    if (tarefa.valorUnitario && tarefa.valorUnitario > 0) {
+      tarefa.feito = true;
+      this.solicitarValorUnitario(tarefa);
+    }
+  }
+
+  async removerDoCarrinho(tarefa: any) {
+    const actionSheet = await this.actionSheetCtrl.create({
+    // const alert = this.alertCtrl.create({
+      header: 'Remover do Carrinho',
+      subHeader: `Deseja remover "${tarefa.tarefa}" do carrinho?`,
+      mode: 'ios',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Remover',
+          cssClass: 'danger',
+          handler: () => {
+            tarefa.feito = false;
+            this.tarefaService.atualizar(tarefa, () => {
+              this.listarTarefa();
+              // this.showToast(`"${tarefa.tarefa}" removido do carrinho`, 'warning');
+            });
+          }
+        }
+      ]
+    });
+    await actionSheet.present();
+  }
+
+  
+
+  async mostrarDetalhes(tarefa: any) {
+    const modal = await this.modalCtrl.create({
+      component: DetalhesProdutoModalComponent,
+      componentProps: { tarefa },
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
+    });
+  
+    modal.onDidDismiss().then(result => {
+      if (result.role === 'editar') {
+        this.editar(result.data); // chama o modal de edição que você já tem
+      }
+    });
+  
+    await modal.present();
+  }
+
+  private async showToast(message: string, color: string = 'primary') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      position: 'bottom',
+      color,
+      buttons: [
+        {
+          side: 'end',
+          icon: 'close',
+          handler: () => {
+            toast.dismiss();
+          }
+        }
+      ]
+    });
+    toast.present();
+  }
+
+  private async showSimpleAlert(message: string) {
+    const alert = await this.alertCtrl.create({
+      header: 'Atenção',
+      message: message,
+      mode: 'ios',
+      buttons: ['OK']
+    });
+    await alert.present();
+  }
 }
+
+
+

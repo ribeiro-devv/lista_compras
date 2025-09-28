@@ -43,11 +43,18 @@
   box-shadow: 
     0 10px 30px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(var(--ion-color-primary-rgb), 0.1);
-  max-width: 320px;
-  min-width: 280px;
   z-index: 10001;
   animation: tooltipSlideIn 0.3s ease-out;
   backdrop-filter: blur(10px);
+  
+  // Tamanhos responsivos
+  max-width: 300px;
+  min-width: 250px;
+  
+  @media (min-width: 768px) {
+    max-width: 350px;
+    min-width: 300px;
+  }
 }
 
 @keyframes tooltipSlideIn {
@@ -62,38 +69,60 @@
 }
 
 .tooltip-header {
-  padding: 20px 20px 0 20px;
+  padding: 16px 16px 0 16px;
   border-bottom: 1px solid rgba(var(--ion-color-medium-rgb), 0.2);
+  
+  @media (min-width: 768px) {
+    padding: 20px 20px 0 20px;
+  }
 }
 
 .tooltip-title {
-  margin: 0 0 12px 0;
-  font-size: 18px;
+  margin: 0 0 8px 0;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ion-color-dark);
   line-height: 1.3;
+  
+  @media (min-width: 768px) {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
 }
 
 .tooltip-progress {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
+  
+  @media (min-width: 768px) {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
 }
 
 .progress-text {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ion-color-medium);
   font-weight: 500;
   white-space: nowrap;
+  
+  @media (min-width: 768px) {
+    font-size: 12px;
+  }
 }
 
 .progress-bar {
   flex: 1;
-  height: 4px;
+  height: 3px;
   background-color: rgba(var(--ion-color-medium-rgb), 0.2);
   border-radius: 2px;
   overflow: hidden;
+  
+  @media (min-width: 768px) {
+    height: 4px;
+  }
 }
 
 .progress-fill {
@@ -104,14 +133,24 @@
 }
 
 .tooltip-content {
-  padding: 16px 20px;
+  padding: 12px 16px;
+  
+  @media (min-width: 768px) {
+    padding: 16px 20px;
+  }
 }
 
 .tooltip-description {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  line-height: 1.5;
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--ion-color-dark);
+  
+  @media (min-width: 768px) {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
 }
 
 .tooltip-action {
@@ -120,15 +159,25 @@
 
 .action-button {
   --border-radius: 8px;
-  font-size: 12px;
-  height: 32px;
+  font-size: 11px;
+  height: 30px;
+  
+  @media (min-width: 768px) {
+    font-size: 12px;
+    height: 32px;
+  }
 }
 
 .tooltip-controls {
-  padding: 0 20px 20px 20px;
+  padding: 0 16px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  
+  @media (min-width: 768px) {
+    padding: 0 20px 20px 20px;
+    gap: 12px;
+  }
 }
 
 .control-buttons {
@@ -140,8 +189,13 @@
 .nav-button {
   flex: 1;
   --border-radius: 8px;
-  font-size: 13px;
-  height: 36px;
+  font-size: 12px;
+  height: 32px;
+  
+  @media (min-width: 768px) {
+    font-size: 13px;
+    height: 36px;
+  }
   
   &.primary {
     --background: var(--ion-color-primary);
@@ -152,8 +206,13 @@
 .skip-button {
   align-self: center;
   --color: var(--ion-color-medium);
-  font-size: 12px;
-  height: 28px;
+  font-size: 11px;
+  height: 24px;
+  
+  @media (min-width: 768px) {
+    font-size: 12px;
+    height: 28px;
+  }
 }
 
 // Seta do tooltip
@@ -199,20 +258,56 @@
   }
 }
 
-// Responsividade
-@media (max-width: 768px) {
+// Responsividade mobile - tooltip menor
+@media (max-width: 480px) {
   .tour-tooltip {
-    max-width: calc(100vw - 40px);
-    min-width: calc(100vw - 40px);
-    margin: 0 20px;
+    max-width: calc(100vw - 32px);
+    min-width: calc(100vw - 32px);
+    margin: 0 16px;
+    border-radius: 12px;
+  }
+  
+  .tooltip-header {
+    padding: 12px 12px 0 12px;
   }
   
   .tooltip-title {
-    font-size: 16px;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  
+  .tooltip-content {
+    padding: 10px 12px;
   }
   
   .tooltip-description {
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.3;
+    margin-bottom: 10px;
+  }
+  
+  .tooltip-controls {
+    padding: 0 12px 12px 12px;
+    gap: 6px;
+  }
+  
+  .nav-button {
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .skip-button {
+    height: 22px;
+    font-size: 10px;
+  }
+  
+  .progress-text {
+    font-size: 10px;
+  }
+  
+  .action-button {
+    height: 26px;
+    font-size: 10px;
   }
 }
 
