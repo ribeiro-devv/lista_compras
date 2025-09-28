@@ -14,12 +14,15 @@ export class TourOverlayComponent implements OnInit, OnDestroy, AfterViewInit {
   isActive = false;
   isCompleted = false;
   progress = 0;
+  isMobile = false;
 
   private subscriptions: Subscription[] = [];
 
   constructor(
     public tourService: TourService
-  ) {}
+  ) {
+    this.isMobile = window.innerWidth <= 768;
+  }
 
   ngOnInit() {
     // Subscrever às mudanças do tour
@@ -43,6 +46,14 @@ export class TourOverlayComponent implements OnInit, OnDestroy, AfterViewInit {
         this.isCompleted = completed;
       })
     );
+
+    // Listener para redimensionamento da tela
+    window.addEventListener('resize', () => {
+      this.isMobile = window.innerWidth <= 768;
+      if (this.isActive) {
+        setTimeout(() => this.positionTooltip(), 100);
+      }
+    });
   }
 
   ngAfterViewInit() {
@@ -73,48 +84,98 @@ export class TourOverlayComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const targetRect = targetElement.getBoundingClientRect();
     const tooltipElement = this.tooltipRef.nativeElement;
-    const tooltipRect = tooltipElement.getBoundingClientRect();
-    
-    // Calcular posição baseada na posição especificada
-    let top = 0;
-    let left = 0;
-
-    switch (this.currentStep.position) {
-      case 'top':
-        top = targetRect.top - tooltipRect.height - 20;
-        left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
-        break;
-      case 'bottom':
-        top = targetRect.bottom + 30;
-        left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
-        break;
-      case 'left':
-        top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
-        left = targetRect.left - tooltipRect.width - 20;
-        break;
-      case 'right':
-        top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
-        left = targetRect.right + 20;
-        break;
-    }
-
-    // Ajustar para não sair da tela
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    if (left < 10) left = 10;
-    if (left + tooltipRect.width > windowWidth - 10) {
-      left = windowWidth - tooltipRect.width - 10;
-    }
-    if (top < 10) top = 10;
-    if (top + tooltipRect.height > windowHeight - 10) {
-      top = windowHeight - tooltipRect.height - 10;
-    }
+    // Aguardar o tooltip ser renderizado para obter suas dimensões
+    setTimeout(() => {
+      const tooltipRect = tooltipElement.getBoundingClientRect();
+      
+      let top = 0;
+      let left = 0;
+      let position = this.currentStep!.position;
 
-    tooltipElement.style.position = 'fixed';
-    tooltipElement.style.top = `${top}px`;
-    tooltipElement.style.left = `${left}px`;
-    tooltipElement.style.zIndex = '10000';
+      // Para mobile, sempre posicionar no centro da tela
+      if (this.isMobile) {
+        top = Math.max(20, (windowHeight - tooltipRect.height) / 2);
+        left = Math.max(16, (windowWidth - tooltipRect.width) / 2);
+        
+        // Ajustar se não couber
+        if (top + tooltipRect.height > windowHeight - 20) {
+          top = windowHeight - tooltipRect.height - 20;
+        }
+        if (left + tooltipRect.width > windowWidth - 32) {
+          left = 16;
+        }
+      } else {
+        // Lógica para desktop
+        switch (position) {
+          case 'top':
+            top = targetRect.top - tooltipRect.height - 20;
+            left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+            
+            // Se não couber em cima, colocar embaixo
+            if (top < 20) {
+              top = targetRect.bottom + 20;
+              position = 'bottom';
+            }
+            break;
+            
+          case 'bottom':
+            top = targetRect.bottom + 20;
+            left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+            
+            // Se não couber embaixo, colocar em cima
+            if (top + tooltipRect.height > windowHeight - 20) {
+              top = targetRect.top - tooltipRect.height - 20;
+              position = 'top';
+            }
+            break;
+            
+          case 'left':
+            top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+            left = targetRect.left - tooltipRect.width - 20;
+            
+            // Se não couber à esquerda, colocar à direita
+            if (left < 20) {
+              left = targetRect.right + 20;
+              position = 'right';
+            }
+            break;
+            
+          case 'right':
+            top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+            left = targetRect.right + 20;
+            
+            // Se não couber à direita, colocar à esquerda
+            if (left + tooltipRect.width > windowWidth - 20) {
+              left = targetRect.left - tooltipRect.width - 20;
+              position = 'left';
+            }
+            break;
+        }
+
+        if (left < 20) left = 20;
+        if (left + tooltipRect.width > windowWidth - 20) {
+          left = windowWidth - tooltipRect.width - 20;
+        }
+        if (top < 20) top = 20;
+        if (top + tooltipRect.height > windowHeight - 20) {
+          top = windowHeight - tooltipRect.height - 20;
+        }
+      }
+
+      // Aplicar posicionamento
+      tooltipElement.style.position = 'fixed';
+      tooltipElement.style.top = `${top}px`;
+      tooltipElement.style.left = `${left}px`;
+      tooltipElement.style.zIndex = '10001';
+      
+      // Atualizar classe da posição da seta se mudou
+      tooltipElement.className = tooltipElement.className.replace(/tooltip-\w+/g, '');
+      tooltipElement.classList.add(`tooltip-${position}`);
+      
+    }, 10);
   }
 
   nextStep() {

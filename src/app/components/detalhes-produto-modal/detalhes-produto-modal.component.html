@@ -1,0 +1,30 @@
+<div class="modal-header-modern">
+  <h2 class="modal-title-modern">Detalhes: {{ tarefa?.tarefa }}</h2>
+</div>
+<div class="form-modern">
+
+  <div>
+    <span class="title">Status</span>
+    <p class="detail-text">{{ formataStatus(tarefa?.feito) }}</p>
+  </div>
+
+  <div>
+    <span class="title">Quantidade</span>
+    <p class="detail-text">{{ tarefa?.quantidade }}</p>
+  </div>
+
+  <div>
+    <span class="title">Valor Unitário</span>
+    <p class="detail-text">{{ formatarMoeda(tarefa?.valorUnitario) }}</p>
+  </div>
+
+  <div>
+    <span class="title">Subtotal</span>
+    <p class="detail-total">{{ formatarMoeda(subtotal) }}</p>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
+    <button type="button" class="modal-button-save" (click)="editar()">Editar</button>
+  </div>
+</div>

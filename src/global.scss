@@ -70,3 +70,182 @@ ion-input.is-invalid::part(native) {
 ion-input.is-invalid::part(native):focus {
   box-shadow: 0 0 6px red;
 }
+
+
+
+
+
+
+
+
+
+
+.custom-action-sheet {
+  
+  .action-sheet-wrapper {
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+  }
+  
+  .action-sheet-container {
+    padding: 0;
+  }
+
+  .action-sheet-group {
+    background: var(--ion-color-light);
+    margin: 8px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .action-sheet-title {
+    font-weight: 600;
+    font-size: 16px;
+    padding: 20px 16px 8px 16px;
+    color: var(--ion-color-dark);
+    text-align: center;
+  }
+
+  .action-sheet-sub-title {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    padding: 0 16px 16px 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(var(--ion-color-medium-rgb), 0.2);
+  }
+
+  .action-sheet-button {
+    min-height: 56px;
+    font-size: 16px;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(var(--ion-color-medium-rgb), 0.1);
+    
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .action-sheet-icon {
+      margin-inline-end: 16px;
+      font-size: 20px;
+      color: var(--ion-color-medium);
+    }
+
+    // Ação de adicionar (verde)
+    &.action-add {
+      .action-sheet-icon {
+        color: var(--ion-color-success);
+      }
+      
+      &:hover {
+        background: rgba(var(--ion-color-success-rgb), 0.1);
+      }
+    }
+
+    // Ação de remover (laranja)
+    &.action-remove {
+      .action-sheet-icon {
+        color: var(--ion-color-warning);
+      }
+      
+      &:hover {
+        background: rgba(var(--ion-color-warning-rgb), 0.1);
+      }
+    }
+
+    // Ação de editar (azul)
+    &.action-edit {
+      .action-sheet-icon {
+        color: var(--ion-color-primary);
+      }
+      
+      &:hover {
+        background: rgba(var(--ion-color-primary-rgb), 0.1);
+      }
+    }
+
+    // Ação de informação (roxo)
+    &.action-info {
+      .action-sheet-icon {
+        color: var(--ion-color-tertiary);
+      }
+      
+      &:hover {
+        background: rgba(var(--ion-color-tertiary-rgb), 0.1);
+      }
+    }
+
+    // Ação de duplicar (cinza)
+    &.action-duplicate {
+      .action-sheet-icon {
+        color: var(--ion-color-secondary);
+      }
+      
+      &:hover {
+        background: rgba(var(--ion-color-secondary-rgb), 0.1);
+      }
+    }
+
+    // Separador visual
+    &.action-separator {
+      min-height: 8px;
+      background: rgba(var(--ion-color-medium-rgb), 0.1);
+      pointer-events: none;
+      
+      .action-sheet-button-inner {
+        display: none;
+      }
+    }
+
+    // Ação de excluir (vermelho)
+    &.action-delete {
+      .action-sheet-icon {
+        color: var(--ion-color-danger);
+      }
+      
+      .action-sheet-title {
+        color: var(--ion-color-danger);
+        font-weight: 500;
+      }
+      
+      &:hover {
+        background: rgba(var(--ion-color-danger-rgb), 0.1);
+      }
+    }
+
+    // Botão cancelar
+    &.action-cancel {
+      .action-sheet-title {
+        color: var(--ion-color-medium);
+        font-weight: 600;
+      }
+      
+      .action-sheet-icon {
+        color: var(--ion-color-medium);
+      }
+    }
+  }
+
+  // Modo escuro
+  @media (prefers-color-scheme: dark) {
+    .action-sheet-group {
+      background: var(--ion-color-step-50);
+    }
+
+    .action-sheet-title {
+      color: var(--ion-color-light);
+    }
+
+    .action-sheet-sub-title {
+      color: var(--ion-color-step-400);
+      border-bottom-color: rgba(var(--ion-color-step-200-rgb), 0.2);
+    }
+
+    .action-sheet-button {
+      border-bottom-color: rgba(var(--ion-color-step-200-rgb), 0.1);
+      
+      &.action-separator {
+        background: rgba(var(--ion-color-step-200-rgb), 0.1);
+      }
+    }
+  }
+}

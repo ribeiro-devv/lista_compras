@@ -1,0 +1,86 @@
+.modal-header-modern {
+  background-color: #28a745;
+  color: #ffffff;
+  text-align: center;
+  padding: 12px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.modal-title-modern {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+@media (max-width: 320px) {
+  .modal-title-modern {
+    font-size: 1rem;
+  }
+}
+
+.form-modern {
+  padding: 16px;
+  width: 100%;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.modal-button-cancel {
+  color: #fff;
+  background-color: #ff4444;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-button-cancel:hover, .modal-button-save:hover {
+  transition: ease-in 0.3s;
+  scale: 1.1;
+}
+
+.modal-button-save {
+  color: #fff;
+  background-color: #28a745;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+@media (max-width: 360px) {
+  .modal-button-cancel, .modal-button-save {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+}
+
+.title {
+  display: block;
+  font-size: 14px;
+  font-weight: bolder;
+  color: #000000;
+  margin-top: 15px;
+  margin-bottom: 4px;
+}
+
+/* Valores dos campos */
+.detail-text {
+  font-size: 16px;
+  color: #222;
+  margin: 10px 0 10px 0;
+}
+
+/* Subtotal em destaque */
+.detail-total {
+  font-size: 18px;
+  font-weight: bold;
+  color: #28a745;
+  margin-top: 10px;
+}
