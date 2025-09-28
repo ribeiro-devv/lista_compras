@@ -1,0 +1,199 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="success">
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Configurações</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="settings-content">
+  
+  <!-- Seção do Perfil do Usuário -->
+  <ion-card class="profile-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="person-circle" class="profile-icon"></ion-icon>
+        Perfil do Usuário
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <div class="profile-info">
+        <div class="avatar-section">
+          <ion-avatar class="profile-avatar">
+            <img [src]="userProfile.avatar" alt="Avatar do usuário">
+          </ion-avatar>
+          <ion-button fill="clear" size="small" class="change-avatar-btn">
+            <ion-icon name="camera"></ion-icon>
+          </ion-button>
+        </div>
+        
+        <div class="user-details">
+          <h3>{{ userProfile.name }}</h3>
+          <p>{{ userProfile.email }}</p>
+        </div>
+      </div>
+      
+      <ion-button expand="block" fill="outline" (click)="editProfile()">
+        <ion-icon name="create" slot="start"></ion-icon>
+        Editar Perfil
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Seção de Configurações do App -->
+  <ion-card class="settings-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="settings" class="settings-icon"></ion-icon>
+        Configurações do Aplicativo
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      
+      <!-- Modo Escuro -->
+      <ion-item>
+        <ion-icon name="moon" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Modo Escuro</h3>
+          <p>Ativar tema escuro</p>
+        </ion-label>
+        <ion-toggle 
+          [(ngModel)]="appSettings.darkMode" 
+          (ionChange)="onDarkModeToggle()"
+          slot="end">
+        </ion-toggle>
+      </ion-item>
+
+      <!-- Notificações -->
+      <ion-item>
+        <ion-icon name="notifications" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Notificações</h3>
+          <p>Receber alertas do app</p>
+        </ion-label>
+        <ion-toggle 
+          [(ngModel)]="appSettings.notifications" 
+          (ionChange)="onNotificationsToggle()"
+          slot="end">
+        </ion-toggle>
+      </ion-item>
+
+      <!-- Moeda -->
+      <ion-item>
+        <ion-icon name="card" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Moeda</h3>
+          <p>Moeda padrão do app</p>
+        </ion-label>
+        <ion-select 
+          [(ngModel)]="appSettings.currency" 
+          (ionChange)="onCurrencyChange()"
+          interface="popover"
+          slot="end">
+          <ion-select-option value="BRL">Real (R$)</ion-select-option>
+          <ion-select-option value="USD">Dólar (US$)</ion-select-option>
+          <ion-select-option value="EUR">Euro (€)</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Idioma -->
+      <ion-item>
+        <ion-icon name="language" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Idioma</h3>
+          <p>Idioma do aplicativo</p>
+        </ion-label>
+        <ion-select 
+          [(ngModel)]="appSettings.language" 
+          interface="popover"
+          slot="end">
+          <ion-select-option value="pt-BR">Português</ion-select-option>
+          <ion-select-option value="en-US">English</ion-select-option>
+          <ion-select-option value="es-ES">Español</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Seção de Ações -->
+  <ion-card class="actions-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="options" class="actions-icon"></ion-icon>
+        Ações
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      
+      <!-- <ion-button expand="block" fill="outline" color="medium">
+        <ion-icon name="download" slot="start"></ion-icon>
+        Exportar Dados
+      </ion-button>
+      
+      <ion-button expand="block" fill="outline" color="medium">
+        <ion-icon name="cloud-upload" slot="start"></ion-icon>
+        Backup dos Dados
+      </ion-button> -->
+      
+      <ion-button expand="block" fill="outline" color="danger" (click)="clearData()">
+        <ion-icon name="trash" slot="start"></ion-icon>
+        Limpar Todos os Dados
+      </ion-button>
+
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Seção de Informações -->
+  <ion-card class="info-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="information-circle" class="info-icon"></ion-icon>
+        Informações
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      
+      <!-- <ion-item button>
+        <ion-icon name="help-circle" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Ajuda e Suporte</h3>
+          <p>Dúvidas e suporte técnico</p>
+        </ion-label>
+      </ion-item> -->
+
+      <ion-item button>
+        <ion-icon name="document-text" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Termos de Uso</h3>
+          <p>Termos e condições de uso</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item button>
+        <ion-icon name="shield-checkmark" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Política de Privacidade</h3>
+          <p>Como tratamos seus dados</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item>
+        <ion-icon name="code" slot="start"></ion-icon>
+        <ion-label>
+          <h3>Versão do App</h3>
+          <p>v1.0.0</p>
+        </ion-label>
+      </ion-item>
+
+    </ion-card-content>
+  </ion-card>
+
+</ion-content>

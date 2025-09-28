@@ -1,14 +1,12 @@
 import { Component } from '@angular/core';
-import { ActionSheetController, AlertController, LoadingController, ToastController } from '@ionic/angular';
-import { readTask } from 'ionicons/dist/types/stencil-public-runtime';
-import { from } from 'rxjs';
+import { ActionSheetController, AlertController } from '@ionic/angular';
 import { TarefaService } from 'src/app/services/tarefa.service';
 import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/add-produto-modal.component';
 import { ModalController } from '@ionic/angular';
-import { ReactiveFormsModule } from '@angular/forms';
 import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
 import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/informacoes-modal.component';
 import { TourService } from 'src/app/services/tour.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -23,20 +21,32 @@ export class HomePage {
     private alertCtrl: AlertController,
     private tarefaService: TarefaService,
     private actionSheetCtrl: ActionSheetController,
-    private toastCtrl: ToastController, // Adicione esta importação
     private modalCtrl: ModalController,
+    private router: Router,
     private tourService: TourService
   ) { }
 
   ionViewDidEnter() {
     this.listarTarefa();
     this.checkFirstAccess();
+    this.loadThemeSettings();
   }
 
+  loadThemeSettings() {
+    const savedSettings = localStorage.getItem('appSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      document.body.classList.toggle('dark', settings.darkMode);
+    }
+  }
+
+  openSettings() {
+    this.router.navigate(['/settings']);
+  }
+
+
   checkFirstAccess() {
-    // Verificar se é o primeiro acesso e iniciar o tour
     if (!this.tourService.isTourCompletedOnce()) {
-      // Aguardar um pouco para garantir que a view esteja carregada
       setTimeout(() => {
         this.tourService.startTour();
       }, 1000);
@@ -47,7 +57,6 @@ export class HomePage {
     this.tarefaCollection = this.tarefaService.listar();
   }
 
-  // Método para otimizar o *ngFor
   trackByFn(index: number, item: any) {
     return item.codigo ? item.codigo : index;
   }
@@ -86,65 +95,6 @@ export class HomePage {
   
     await modal.present();
   }
-
-  // async showAdd() {
-  //   const alert = await this.alertCtrl.create({
-  //     header: 'Novo Produto',
-  //     mode: 'ios',
-  //     inputs: [
-  //       {
-  //         name: 'tarefa',
-  //         type: 'text',
-  //         placeholder: 'Nome do Produto',
-  //       },
-  //       {
-  //         name: 'quantidade',
-  //         type: 'number',
-  //         placeholder: 'Quantidade'
-  //       },
-  //       {
-  //         name: 'valorUnitario',
-  //         type: 'text',
-  //         placeholder: 'Valor Unitário (R$)',
-  //         attributes: { 
-  //           inputmode: 'decimal' 
-  //         }
-  //       }
-  //     ],
-  //     buttons: [
-  //       {
-  //         text: 'Cancelar',
-  //         role: 'cancel',
-  //         cssClass: 'secondary'
-  //       },
-  //       {
-  //         text: 'Salvar',
-  //         handler: async (dados) => {
-  //           // Validação
-  //           if (!dados.tarefa || dados.tarefa.trim() === '') {
-  //             this.showSimpleAlert('O nome do produto não pode estar vazio');
-  //             return false;
-  //           }
-
-  //           // Define quantidade padrão
-  //           if (!dados.quantidade || dados.quantidade <= 0) {
-  //             dados.quantidade = 1;
-  //           };
-
-  //           // Define valor unitário padrão
-  //           if (!dados.valorUnitario || dados.valorUnitario < 0) {
-  //             dados.valorUnitario = 0;
-  //           }
-
-  //           this.tarefaService.salvar(dados, () => {
-  //             this.listarTarefa();
-  //           });
-  //         }
-  //       }
-  //     ]
-  //   });
-  //   await alert.present();
-  // }
 
   async delete(item: any) {
     const alert = await this.alertCtrl.create({
@@ -186,10 +136,9 @@ export class HomePage {
           this.showSimpleAlert('O nome do produto não pode estar vazio');
           return;
         }
-        // Garante que o código da tarefa original seja mantido
-        dadosEditados.codigo = tarefa.codigo; // Preserva o código original
+        dadosEditados.codigo = tarefa.codigo;
         this.tarefaService.edicao(dadosEditados, () => {
-          this.listarTarefa(); // Atualiza a lista após a edição
+          this.listarTarefa();
         });
       }
     });
@@ -197,68 +146,9 @@ export class HomePage {
     await modal.present();
   }
 
-  // async editar(tarefa: any) {
-  //   const alert = await this.alertCtrl.create({
-  //     header: 'Editar Produto',
-  //     mode: 'ios',
-  //     inputs: [
-  //       {
-  //         name: 'codigo',
-  //         type: 'number',
-  //         value: tarefa.codigo,
-  //         disabled: true,
-  //         cssClass: 'hidden-input'
-  //       },
-  //       {
-  //         name: 'tarefa',
-  //         type: 'text',
-  //         value: tarefa.tarefa,
-  //         placeholder: 'Nome do Produto'
-  //       },
-  //       {
-  //         name: 'quantidade',
-  //         type: 'number',
-  //         value: tarefa.quantidade,
-  //         placeholder: 'Quantidade'
-  //       },
-  //       {
-  //         name: 'valorUnitario',
-  //         type: 'number',
-  //         value: tarefa.valorUnitario,
-  //         attributes: {
-  //           step: '0.01'
-  //         }
-  //       }
-        
-  //     ],
-  //     buttons: [
-  //       {
-  //         text: 'Cancelar',
-  //         role: 'cancel',
-  //         cssClass: 'secondary'
-  //       },
-  //       {
-  //         text: 'Salvar',
-  //         handler: (dadosEditados) => {
-  //           if (!dadosEditados.tarefa || dadosEditados.tarefa.trim() === '') {
-  //             this.showSimpleAlert('O nome do produto não pode estar vazio');
-  //             return false;
-  //           }
-            
-  //           this.tarefaService.edicao(dadosEditados, () => {
-  //             this.listarTarefa();
-  //           });
-  //         }
-  //       }
-  //     ]
-  //   });
-  //   await alert.present();
-  // }
-
   async openActions(tarefa: any) {
     const buttons = [];
 
-    // Botão para marcar/desmarcar como concluído
     buttons.push({
       text: tarefa.feito ? 'Remover do Carrinho' : 'Adicionar no Carrinho',
       icon: tarefa.feito ? 'close-circle' : 'checkmark-circle',
@@ -274,7 +164,6 @@ export class HomePage {
       }
     });
 
-    // Botão para editar (só se não estiver concluído)
     if (!tarefa.feito) {
       buttons.push({
         text: 'Editar Produto',
@@ -383,11 +272,6 @@ export class HomePage {
     return this.tarefaService.calcularTotalComprado();
   }
 
-  // getTotalPendente(): number {
-  //   return this.tarefaService.calcularTotalPendente();
-  // }
-
-  // Método para formatar valores em moeda
   formatarMoeda(valor: number): string {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -395,7 +279,6 @@ export class HomePage {
     }).format(valor);
   }
 
-  // Método para calcular subtotal do item
   calcularSubtotal(item: any): number {
     const quantidade = parseFloat(item.quantidade) || 0;
     const valorUnitario = parseFloat(item.valorUnitario) || 0;
@@ -427,7 +310,6 @@ export class HomePage {
     await modal.present();
   }
 
-  // Método para reiniciar o tour
   restartTour() {
     this.tourService.resetTour();
     setTimeout(() => {
