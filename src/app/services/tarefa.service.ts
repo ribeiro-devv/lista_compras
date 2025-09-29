@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ActionSheetController } from '@ionic/angular';
+import { HistoricoService, ItemCompra } from './historico.service';
+import { CatalogoService } from './catalogo.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +10,11 @@ export class TarefaService {
   private readonly STORAGE_KEY = 'tarefaCollection';
   codMostrar: boolean = false;
 
-  constructor(private actionSheetCtrl: ActionSheetController) { }
+  constructor(
+    private actionSheetCtrl: ActionSheetController,
+    private historicoService: HistoricoService,
+    private catalogoService: CatalogoService
+  ) { }
 
   async salvar(tarefa: any, callback = null) {
     tarefa.feito = false;
@@ -168,5 +174,67 @@ export class TarefaService {
   // Método para verificar se a lista está vazia (para uso no template)
   isListEmpty(): boolean {
     return this.getCollection().length === 0;
+  }
+
+  // Método para verificar se todos os itens foram comprados
+  isListaCompleta(): boolean {
+    const collection = this.getCollection();
+    if (collection.length === 0) return false;
+    return collection.every(item => item.feito === true);
+  }
+
+  // Método para arquivar a lista atual no histórico
+  arquivarListaAtual(nomeCustomizado?: string): any {
+    const collection = this.getCollection();
+    const itensParaArquivar: ItemCompra[] = collection.map(item => ({
+      codigo: item.codigo,
+      tarefa: item.tarefa,
+      quantidade: parseFloat(item.quantidade) || 0,
+      valorUnitario: parseFloat(item.valorUnitario) || 0,
+      feito: item.feito,
+      categoria: this.classificarItem(item.tarefa)
+    }));
+
+    const listaArquivada = this.historicoService.arquivarListaAtual(itensParaArquivar, nomeCustomizado);
+    
+    // Limpar a lista atual após arquivar
+    this.excluirTodos();
+    
+    return listaArquivada;
+  }
+
+  // Método auxiliar para classificar itens usando o catálogo
+  private classificarItem(nomeItem: string): string {
+    // Primeiro, tenta encontrar no catálogo
+    const produtosEncontrados = this.catalogoService.buscarProdutos(nomeItem);
+    if (produtosEncontrados.length > 0) {
+      const produto = produtosEncontrados[0];
+      const categoria = this.catalogoService.obterCategoriaPorId(produto.categoria);
+      return categoria?.nome || 'Outros';
+    }
+    
+    // Se não encontrar no catálogo, usa classificação manual
+    const item = nomeItem.toLowerCase();
+    
+    if (/pão|leite|ovo|queijo|manteiga|iogurte|cream|nata/.test(item)) {
+      return 'Laticínios & Padaria';
+    }
+    if (/carne|frango|peixe|linguiça|salsicha|presunto/.test(item)) {
+      return 'Carnes & Proteínas';
+    }
+    if (/maçã|banana|laranja|uva|fruta|tomate|alface|cebola|batata/.test(item)) {
+      return 'Frutas & Verduras';
+    }
+    if (/arroz|feijão|macarrão|açúcar|sal|óleo|farinha/.test(item)) {
+      return 'Grãos & Básicos';
+    }
+    if (/sabonete|shampoo|pasta|escova|papel|detergente|amaciante/.test(item)) {
+      return 'Higiene Pessoal';
+    }
+    if (/refrigerante|suco|água|cerveja|vinho|café/.test(item)) {
+      return 'Bebidas';
+    }
+    
+    return 'Outros';
   }
 }

@@ -1,25 +1,148 @@
 <div class="modal-header-modern">
   <h2 class="modal-title-modern">Adicionar Produto</h2>
+  <ion-button 
+    fill="clear" 
+    size="small" 
+    (click)="alternarModo()"
+    class="toggle-mode-btn">
+    <ion-icon [name]="modoBusca ? 'create-outline' : 'search-outline'" slot="start"></ion-icon>
+    {{ modoBusca ? 'Digitar' : 'Buscar' }}
+  </ion-button>
 </div>
+
 <div class="form-modern">
   <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
 
-    <div>
-      <span *ngIf="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"  class="error-text">
-        Nome do Produto é obrigatório.
-      </span>
-      <span *ngIf="!(produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty))" class="text">
-        Nome do Produto
-      </span>
+    <!-- Modo Busca no Catálogo -->
+    <div *ngIf="modoBusca">
+      <div class="search-section">
+        <span class="text">Buscar no Catálogo</span>
+        <ion-input
+          #nomeProdutoInput
+          class="form-input-modern search-input"
+          [(ngModel)]="termoBusca"
+          [ngModelOptions]="{standalone: true}"
+          (ionInput)="buscarProdutos()"
+          type="text"
+          placeholder="Digite o nome do produto..."
+        ></ion-input>
+      </div>
+
+      <!-- Catálogo de Produtos -->
+      <div class="catalog-section" *ngIf="mostrarCatalogo">
+        <!-- Favoritos -->
+        <div class="catalog-category" *ngIf="obterFavoritos().length > 0">
+          <h4 class="category-title">
+            <ion-icon name="heart" color="danger"></ion-icon>
+            Favoritos
+          </h4>
+          <div class="products-grid">
+            <div 
+              *ngFor="let produto of obterFavoritos()" 
+              class="product-item favorite"
+              (click)="selecionarProduto(produto)">
+              <div class="product-info">
+                <span class="product-name">{{ produto.nome }}</span>
+                <span class="product-category">{{ obterCategoriaPorId(produto.categoria)?.nome }}</span>
+                <span class="product-price" *ngIf="produto.precoMedio">
+                  {{ formatarMoedaSimples(produto.precoMedio) }}
+                </span>
+              </div>
+              <ion-icon name="heart" color="danger" class="favorite-icon"></ion-icon>
+            </div>
+          </div>
+        </div>
+
+        <!-- Produtos Encontrados -->
+        <div class="catalog-category" *ngIf="produtosEncontrados.length > 0">
+          <h4 class="category-title">
+            <ion-icon name="search-outline"></ion-icon>
+            {{ termoBusca ? 'Resultados' : 'Mais Usados' }}
+          </h4>
+          <div class="products-grid">
+            <div 
+              *ngFor="let produto of produtosEncontrados" 
+              class="product-item"
+              [class.selected]="produtoSelecionado?.id === produto.id"
+              (click)="selecionarProduto(produto)">
+              <div class="product-info">
+                <span class="product-name">{{ produto.nome }}</span>
+                <span class="product-category">{{ obterCategoriaPorId(produto.categoria)?.nome }}</span>
+                <span class="product-price" *ngIf="produto.precoMedio">
+                  {{ formatarMoedaSimples(produto.precoMedio) }}
+                </span>
+              </div>
+              <div class="product-actions">
+                <ion-button 
+                  fill="clear" 
+                  size="small" 
+                  (click)="alternarFavorito(produto); $event.stopPropagation()"
+                  class="favorite-btn">
+                  <ion-icon 
+                    [name]="produto.favorito ? 'heart' : 'heart-outline'" 
+                    [color]="produto.favorito ? 'danger' : 'medium'">
+                  </ion-icon>
+                </ion-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categorias -->
+        <div class="catalog-category" *ngFor="let categoria of categorias">
+          <h4 class="category-title" *ngIf="obterProdutosPorCategoria(categoria.id).length > 0">
+            <ion-icon [name]="categoria.icone" [style.color]="categoria.cor"></ion-icon>
+            {{ categoria.nome }}
+          </h4>
+          <div class="products-grid" *ngIf="obterProdutosPorCategoria(categoria.id).length > 0">
+            <div 
+              *ngFor="let produto of obterProdutosPorCategoria(categoria.id).slice(0, 6)" 
+              class="product-item"
+              [class.selected]="produtoSelecionado?.id === produto.id"
+              (click)="selecionarProduto(produto)">
+              <div class="product-info">
+                <span class="product-name">{{ produto.nome }}</span>
+                <span class="product-price" *ngIf="produto.precoMedio">
+                  {{ formatarMoedaSimples(produto.precoMedio) }}
+                </span>
+              </div>
+              <div class="product-actions">
+                <ion-button 
+                  fill="clear" 
+                  size="small" 
+                  (click)="alternarFavorito(produto); $event.stopPropagation()"
+                  class="favorite-btn">
+                  <ion-icon 
+                    [name]="produto.favorito ? 'heart' : 'heart-outline'" 
+                    [color]="produto.favorito ? 'danger' : 'medium'">
+                  </ion-icon>
+                </ion-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <ion-input
-      #nomeProdutoInput
-      class="form-input-modern"
-      formControlName="tarefa"
-      type="text"
-      [class.is-invalid]="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"
-    ></ion-input>
+    <!-- Modo Digitação Manual -->
+    <div *ngIf="!modoBusca">
+      <div>
+        <span *ngIf="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"  class="error-text">
+          Nome do Produto é obrigatório.
+        </span>
+        <span *ngIf="!(produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty))" class="text">
+          Nome do Produto
+        </span>
+      </div>
+
+      <ion-input
+        #nomeProdutoInput
+        class="form-input-modern"
+        formControlName="tarefa"
+        type="text"
+        [class.is-invalid]="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"
+      ></ion-input>
+    </div>
 
     <div>
       <span class="text">

@@ -1,0 +1,215 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Histórico de Gastos</ion-title>
+    
+    <ion-buttons slot="end">
+      <ion-button (click)="exportarDados()" fill="clear">
+        <ion-icon name="download-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  
+  <!-- Estatísticas Gerais - Design Melhorado -->
+  <div class="stats-container" *ngIf="estatisticasGerais">
+    <div class="stat-card total">
+      <div class="stat-icon">
+        <ion-icon name="wallet-outline"></ion-icon>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Total Gasto</p>
+        <h2 class="stat-value">{{formatarMoeda(estatisticasGerais.totalGastoGeral)}}</h2>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <ion-icon name="receipt-outline" color="primary"></ion-icon>
+        <h3>{{estatisticasGerais.totalListasGeral}}</h3>
+        <p>Listas</p>
+      </div>
+      
+      <div class="stat-card">
+        <ion-icon name="trending-up-outline" color="success"></ion-icon>
+        <h3>{{formatarMoeda(estatisticasGerais.mediaGastoMensal)}}</h3>
+        <p>Média Mensal</p>
+      </div>
+      
+      <div class="stat-card" *ngIf="estatisticasGerais.categoriaMaisComprada">
+        <ion-icon name="star-outline" color="warning"></ion-icon>
+        <h3>{{estatisticasGerais.categoriaMaisComprada}}</h3>
+        <p>Top Categoria</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de Gastos Mensais - Melhorado -->
+  <ion-card class="chart-card-modern" *ngIf="dadosGrafico.length > 0">
+    <ion-card-header>
+      <div class="card-title-row">
+        <div class="title-with-icon">
+          <ion-icon name="analytics-outline"></ion-icon>
+          <ion-card-title>Evolução dos Gastos</ion-card-title>
+        </div>
+      </div>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="chart-wrapper">
+        <canvas #graficoCanvas></canvas>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Filtros - Design Melhorado -->
+  <div class="filter-tabs">
+    <button 
+      class="filter-tab" 
+      [class.active]="filtroAtivo === 'recentes'"
+      (click)="filtroAtivo = 'recentes'; aplicarFiltro()">
+      <ion-icon name="time-outline"></ion-icon>
+      <span>Recentes</span>
+    </button>
+    <button 
+      class="filter-tab" 
+      [class.active]="filtroAtivo === 'mes'"
+      (click)="filtroAtivo = 'mes'; aplicarFiltro()">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Por Mês</span>
+    </button>
+    <button 
+      class="filter-tab" 
+      [class.active]="filtroAtivo === 'categorias'"
+      (click)="filtroAtivo = 'categorias'; aplicarFiltro()">
+      <ion-icon name="grid-outline"></ion-icon>
+      <span>Categorias</span>
+    </button>
+  </div>
+
+  <!-- Listas Recentes - Design Melhorado -->
+  <div *ngIf="filtroAtivo === 'recentes'" class="content-section">
+    <div *ngFor="let grupo of listasRecentesAgrupadas" class="date-group">
+      <div class="date-header">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <span>{{grupo.data}}</span>
+      </div>
+      
+      <div class="list-cards">
+        <div *ngFor="let lista of grupo.listas" class="list-card" (click)="verDetalhesLista(lista)">
+          <div class="list-card-header">
+            <div class="list-info">
+              <h3>{{lista.nome}}</h3>
+              <p>{{lista.totalItens}} itens</p>
+            </div>
+            <div class="list-badge" [class.complete]="lista.percentualConcluido === 100">
+              {{lista.percentualConcluido}}%
+            </div>
+          </div>
+          <div class="list-card-footer">
+            <span class="list-price">{{formatarMoeda(lista.totalGasto)}}</span>
+            <ion-icon name="chevron-forward-outline" color="medium"></ion-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histórico por Mês - Design Melhorado -->
+  <div *ngIf="filtroAtivo === 'mes'" class="content-section">
+    <div *ngFor="let mes of mesesDisponiveis; trackBy: trackByMes" class="month-section">
+      <div class="month-card-modern" (click)="toggleMesDetalhes(mes)">
+        <div class="month-header-modern">
+          <div class="month-info">
+            <h2>{{mes.resumo.mes}} {{mes.resumo.ano}}</h2>
+            <p>{{mes.resumo.totalListas}} listas finalizadas</p>
+          </div>
+          <div class="month-value">
+            <h3>{{formatarMoeda(mes.resumo.totalGasto)}}</h3>
+            <ion-icon 
+              [name]="mesExpandido === mes ? 'chevron-up' : 'chevron-down'" 
+              color="medium">
+            </ion-icon>
+          </div>
+        </div>
+        
+        <!-- Detalhes expandidos -->
+        <div *ngIf="mesExpandido === mes" class="month-details-modern">
+          <div class="month-stats-row">
+            <div class="mini-stat">
+              <ion-icon name="cart-outline" color="primary"></ion-icon>
+              <div>
+                <p class="mini-stat-label">Total de Itens</p>
+                <p class="mini-stat-value">{{mes.resumo.totalItens}}</p>
+              </div>
+            </div>
+            <div class="mini-stat">
+              <ion-icon name="calculator-outline" color="success"></ion-icon>
+              <div>
+                <p class="mini-stat-label">Média por Lista</p>
+                <p class="mini-stat-value">{{formatarMoeda(mes.resumo.mediaGastoPorLista)}}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Listas do mês -->
+          <div class="month-lists">
+            <div *ngFor="let lista of mes.resumo.listas" class="month-list-item" (click)="verDetalhesLista(lista); $event.stopPropagation()">
+              <div class="month-list-content">
+                <ion-icon name="receipt-outline" color="medium"></ion-icon>
+                <div class="month-list-info">
+                  <h4>{{lista.nome}}</h4>
+                  <p>{{formatarDataSimples(lista.dataFinalizacao)}} • {{lista.totalItens}} itens</p>
+                </div>
+              </div>
+              <div class="month-list-value">
+                <span>{{formatarMoeda(lista.totalGasto)}}</span>
+                <ion-icon name="chevron-forward-outline" color="medium"></ion-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categorias - Design Melhorado -->
+  <div *ngIf="filtroAtivo === 'categorias'" class="content-section">
+    <div class="categories-modern">
+      <div *ngFor="let categoria of categoriasOrdenadas" class="category-card-modern">
+        <div class="category-header-modern">
+          <div class="category-icon-wrapper" [style.background]="getCategoriaColor(categoria.nome)">
+            <ion-icon [name]="getCategoriaIcon(categoria.nome)"></ion-icon>
+          </div>
+          <div class="category-info-modern">
+            <h3>{{categoria.nome}}</h3>
+            <div class="category-values">
+              <span class="category-price">{{formatarMoeda(categoria.valor)}}</span>
+              <span class="category-percent">{{categoria.percentual}}%</span>
+            </div>
+          </div>
+        </div>
+        <div class="category-bar-modern">
+          <div class="category-progress-modern" [style.width.%]="categoria.percentual"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vazio - Melhorado -->
+  <div *ngIf="mesesDisponiveis.length === 0" class="empty-state-modern">
+    <div class="empty-icon">
+      <ion-icon name="analytics-outline"></ion-icon>
+    </div>
+    <h2>Nenhum histórico ainda</h2>
+    <p>Complete e arquive suas listas de compras para começar a ver seu histórico aqui!</p>
+    <ion-button routerLink="/home" fill="solid" color="primary" size="default">
+      <ion-icon name="add-outline" slot="start"></ion-icon>
+      Criar Nova Lista
+    </ion-button>
+  </div>
+
+</ion-content>
