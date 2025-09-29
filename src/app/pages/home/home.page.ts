@@ -46,6 +46,10 @@ export class HomePage {
     this.router.navigate(['/settings']);
   }
 
+  openHistorico() {
+    this.router.navigate(['/historico']);
+  }
+
 
   checkFirstAccess() {
     if (!this.tourService.isTourCompletedOnce()) {
@@ -332,10 +336,7 @@ export class HomePage {
 
   // Métodos auxiliares para as ações
   private adicionarAoCarrinho(tarefa: any) {
-    if (tarefa.valorUnitario && tarefa.valorUnitario > 0) {
-      tarefa.feito = true;
-      this.solicitarValorUnitario(tarefa);
-    }
+    this.solicitarValorUnitario(tarefa);
   }
 
   async removerDoCarrinho(tarefa: any) {
@@ -409,6 +410,39 @@ export class HomePage {
       message: message,
       mode: 'ios',
       buttons: ['OK']
+    });
+    await alert.present();
+  }
+
+  // Método para verificar se a lista está completa
+  isListaCompleta(): boolean {
+    return this.tarefaService.isListaCompleta();
+  }
+
+  // Método para arquivar a lista
+  async arquivarLista() {
+    const alert = await this.alertCtrl.create({
+      header: 'Arquivar Lista',
+      message: 'Deseja arquivar esta lista no histórico? Ela será salva e a lista atual será limpa.',
+      mode: 'ios',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Arquivar',
+          handler: () => {
+            try {
+              const listaArquivada = this.tarefaService.arquivarListaAtual();
+              this.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
+              this.listarTarefa();
+            } catch (error) {
+              this.showSimpleAlert('Erro ao arquivar a lista. Tente novamente.');
+            }
+          }
+        }
+      ]
     });
     await alert.present();
   }

@@ -1,0 +1,642 @@
+// ===== ESTATÍSTICAS NO TOPO =====
+.stats-container {
+  padding: 16px;
+  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+  
+  .stat-card.total {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      ion-icon {
+        font-size: 28px;
+        color: white;
+      }
+    }
+    
+    .stat-content {
+      flex: 1;
+      
+      .stat-label {
+        margin: 0;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .stat-value {
+        margin: 4px 0 0 0;
+        font-size: 28px;
+        color: white;
+        font-weight: 700;
+      }
+    }
+  }
+  
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    
+    .stat-card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      ion-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+      
+      h3 {
+        margin: 4px 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: white;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      p {
+        margin: 0;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// ===== GRÁFICO MODERNO =====
+.chart-card-modern {
+  margin: 16px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  
+  ion-card-header {
+    padding: 16px;
+    background: var(--ion-color-light);
+    
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .title-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        
+        ion-icon {
+          font-size: 24px;
+          color: var(--ion-color-primary);
+        }
+        
+        ion-card-title {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--ion-color-dark);
+        }
+      }
+    }
+  }
+  
+  .chart-wrapper {
+    padding: 16px;
+    background: white;
+    
+    canvas {
+      width: 100% !important;
+      height: 220px !important;
+      border-radius: 8px;
+    }
+  }
+}
+
+// ===== FILTROS MODERNOS =====
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  background: var(--ion-background-color);
+  
+  .filter-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: var(--ion-color-light);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ion-color-medium);
+    
+    ion-icon {
+      font-size: 22px;
+    }
+    
+    span {
+      font-size: 11px;
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+    
+    &.active {
+      background: var(--ion-color-primary);
+      color: white;
+      border-color: var(--ion-color-primary);
+      box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+    }
+  }
+}
+
+// ===== CONTENT SECTION =====
+.content-section {
+  padding: 0 16px 16px;
+}
+
+// ===== LISTAS RECENTES =====
+.date-group {
+  margin-bottom: 24px;
+  
+  .date-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 0 4px;
+    
+    ion-icon {
+      font-size: 18px;
+      color: var(--ion-color-primary);
+    }
+    
+    span {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ion-color-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+  
+  .list-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    
+    .list-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+      
+      &:active {
+        transform: scale(0.98);
+        border-color: var(--ion-color-primary);
+      }
+      
+      .list-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        
+        .list-info {
+          flex: 1;
+          
+          h3 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ion-color-dark);
+          }
+          
+          p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--ion-color-medium);
+          }
+        }
+        
+        .list-badge {
+          padding: 6px 12px;
+          background: var(--ion-color-warning);
+          color: white;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+          
+          &.complete {
+            background: var(--ion-color-success);
+          }
+        }
+      }
+      
+      .list-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid var(--ion-color-light);
+        
+        .list-price {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--ion-color-primary);
+        }
+        
+        ion-icon {
+          font-size: 20px;
+        }
+      }
+    }
+  }
+}
+
+// ===== MÊS MODERNO =====
+.month-section {
+  margin-bottom: 16px;
+}
+
+.month-card-modern {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  
+  .month-header-modern {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    
+    &:active {
+      background: var(--ion-color-light);
+    }
+    
+    .month-info {
+      flex: 1;
+      
+      h2 {
+        margin: 0 0 4px 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--ion-color-dark);
+      }
+      
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--ion-color-medium);
+      }
+    }
+    
+    .month-value {
+      text-align: right;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      h3 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ion-color-primary);
+      }
+      
+      ion-icon {
+        font-size: 24px;
+      }
+    }
+  }
+  
+  .month-details-modern {
+    border-top: 1px solid var(--ion-color-light);
+    animation: slideDown 0.3s ease;
+    
+    .month-stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--ion-color-light);
+      
+      .mini-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        
+        ion-icon {
+          font-size: 32px;
+        }
+        
+        .mini-stat-label {
+          margin: 0 0 2px 0;
+          font-size: 11px;
+          color: var(--ion-color-medium);
+          text-transform: uppercase;
+          font-weight: 600;
+        }
+        
+        .mini-stat-value {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--ion-color-dark);
+        }
+      }
+    }
+    
+    .month-lists {
+      padding: 8px 0;
+      
+      .month-list-item {
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        border-bottom: 1px solid var(--ion-color-light);
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        &:active {
+          background: var(--ion-color-light);
+        }
+        
+        .month-list-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+          
+          ion-icon {
+            font-size: 24px;
+          }
+          
+          .month-list-info {
+            h4 {
+              margin: 0 0 4px 0;
+              font-size: 15px;
+              font-weight: 600;
+              color: var(--ion-color-dark);
+            }
+            
+            p {
+              margin: 0;
+              font-size: 12px;
+              color: var(--ion-color-medium);
+            }
+          }
+        }
+        
+        .month-list-value {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          
+          span {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ion-color-primary);
+          }
+          
+          ion-icon {
+            font-size: 18px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ===== CATEGORIAS MODERNAS =====
+.categories-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  
+  .category-card-modern {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    
+    .category-header-modern {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      
+      .category-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        ion-icon {
+          font-size: 24px;
+          color: white;
+        }
+      }
+      
+      .category-info-modern {
+        flex: 1;
+        
+        h3 {
+          margin: 0 0 6px 0;
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--ion-color-dark);
+        }
+        
+        .category-values {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          
+          .category-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ion-color-primary);
+          }
+          
+          .category-percent {
+            padding: 4px 10px;
+            background: var(--ion-color-light);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ion-color-medium);
+          }
+        }
+      }
+    }
+    
+    .category-bar-modern {
+      height: 8px;
+      background: var(--ion-color-light);
+      border-radius: 4px;
+      overflow: hidden;
+      
+      .category-progress-modern {
+        height: 100%;
+        background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-secondary));
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+    }
+  }
+}
+
+// ===== ESTADO VAZIO MODERNO =====
+.empty-state-modern {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 32px;
+  text-align: center;
+  min-height: 50vh;
+  
+  .empty-icon {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--ion-color-primary-tint), var(--ion-color-secondary-tint));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    
+    ion-icon {
+      font-size: 48px;
+      color: white;
+    }
+  }
+  
+  h2 {
+    margin: 0 0 12px 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    margin: 0 0 24px 0;
+    font-size: 15px;
+    color: var(--ion-color-medium);
+    line-height: 1.6;
+    max-width: 300px;
+  }
+  
+  ion-button {
+    --border-radius: 12px;
+    --padding-start: 24px;
+    --padding-end: 24px;
+    font-weight: 600;
+  }
+}
+
+// ===== ANIMAÇÕES =====
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+// ===== TEMA ESCURO =====
+body.dark {
+  .stats-container {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  }
+  
+  .chart-card-modern,
+  .list-card,
+  .month-card-modern,
+  .category-card-modern {
+    background: var(--ion-color-step-50);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .chart-wrapper {
+    background: var(--ion-color-step-100) !important;
+  }
+  
+  .month-stats-row {
+    background: var(--ion-color-step-100) !important;
+  }
+}
+
+// ===== RESPONSIVE =====
+@media (max-width: 576px) {
+  .stat-row {
+    grid-template-columns: 1fr 1fr !important;
+    
+    .stat-card:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+  
+  .month-stats-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .stat-card.total {
+    .stat-value {
+      font-size: 22px !important;
+    }
+  }
+  
+  .filter-tab span {
+    font-size: 10px;
+  }
+}

@@ -132,3 +132,143 @@
     :host ::ng-deep ion-input .native-input:focus{
     box-shadow: 0 0 6px #5f5f5f !important;
     }
+
+// Estilos do catálogo
+.modal-header-modern {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toggle-mode-btn {
+  --color: #ffffff;
+  font-size: 0.8rem;
+}
+
+.search-section {
+  margin-bottom: 16px;
+}
+
+.search-input {
+  margin-top: 8px;
+}
+
+.catalog-section {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.catalog-category {
+  margin-bottom: 20px;
+}
+
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+.product-item:hover {
+  border-color: #3880ff;
+  box-shadow: 0 2px 8px rgba(56, 128, 255, 0.1);
+}
+
+.product-item.selected {
+  border-color: #3880ff;
+  background-color: #f0f8ff;
+  box-shadow: 0 2px 8px rgba(56, 128, 255, 0.2);
+}
+
+.product-item.favorite {
+  border-color: #f04141;
+  background-color: #fff5f5;
+}
+
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.product-category {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.product-price {
+  font-size: 0.8rem;
+  color: #28a745;
+  font-weight: 600;
+}
+
+.product-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favorite-btn {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+}
+
+.favorite-icon {
+  font-size: 1.2rem;
+}
+
+// Responsividade
+@media (max-width: 480px) {
+  .catalog-section {
+    max-height: 300px;
+  }
+  
+  .product-item {
+    padding: 8px;
+  }
+  
+  .product-name {
+    font-size: 0.85rem;
+  }
+  
+  .product-category,
+  .product-price {
+    font-size: 0.75rem;
+  }
+}
