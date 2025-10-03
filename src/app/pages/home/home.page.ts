@@ -453,6 +453,18 @@ export class HomePage {
     });
     await alert.present();
   }
+
+
+  async showComingSoon(feature: string) {
+    const alert = await this.alertCtrl.create({
+      header: 'Em Breve',
+      message: `A funcionalidade "${feature}" estará disponível em breve!`,
+      mode: 'ios',
+      buttons: ['OK']
+    });
+    await alert.present();
+  }
+
 }
 
 
