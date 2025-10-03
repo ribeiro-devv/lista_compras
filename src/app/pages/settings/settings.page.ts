@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController, ToastController } from '@ionic/angular';
+import { AlertController, ModalController, ToastController } from '@ionic/angular';
+import { PixModalComponent } from 'src/app/components/pix-modal/pix-modal.component';
 
 @Component({
   selector: 'app-settings',
@@ -25,6 +26,7 @@ export class SettingsPage implements OnInit {
   constructor(
     private router: Router,
     private alertController: AlertController,
+    private modalCtrl: ModalController,
     private toastController: ToastController
   ) { }
 
@@ -143,5 +145,38 @@ export class SettingsPage implements OnInit {
 
   goBack() {
     this.router.navigate(['/home']);
+  }
+
+  async showPix() {
+    const modal = await this.modalCtrl.create({
+      component: PixModalComponent,
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
+    });
+    await modal.present();
+    // const alert = await this.alertCtrl.create({
+    //   header: 'Quer Doar?',
+    //   subHeader: 'Ajude a manter esse projeto no ar!',
+    //   message: '🙏 <br><br> Pix:',
+    //   mode: 'ios',
+    //   inputs: [
+    //     {
+    //       value: 'matheus.ribeiro6611@gmail.com',
+    //       disabled: true
+    //     }
+    //   ],
+    //   buttons: [
+    //     {
+    //       text: 'Copiar chave Pix',
+    //       handler: () => {
+    //         const chave = 'matheus.ribeiro6611@gmail.com';
+    //         navigator.clipboard.writeText(chave).then(() => {
+    //           this.showSimpleAlert('Chave PIX copiada!');
+    //         });
+    //       }
+    //     }
+    //   ]
+    // });
+    // await alert.present();
   }
 }

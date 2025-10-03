@@ -1,0 +1,29 @@
+.pix-modal {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+  
+    .pix-header h2 {
+      background: #28a745;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+  
+    .pix-body {
+      margin: 20px 0;
+    }
+  
+    input {
+      width: 100%;
+      text-align: center;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+  
+    .pix-footer ion-button {
+      margin-top: 10px;
+    }
+  }

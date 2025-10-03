@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.rsys.organizadortarefas',
-  appName: 'tarefas',
+  appName: 'Lista de Compras',
   webDir: 'www',
   bundledWebRuntime: false
 };

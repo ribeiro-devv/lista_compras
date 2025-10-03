@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ActionSheetController, AlertController, ToastController, ModalController } from '@ionic/angular';
 import { HistoricoService, ResumoMensal, ListaCompra } from '../../services/historico.service';
 import { ThemeService } from '../../services/theme.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-historico',
@@ -27,7 +28,8 @@ export class HistoricoPage implements OnInit {
     private actionSheetCtrl: ActionSheetController,
     private alertCtrl: AlertController,
     private toastCtrl: ToastController,
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private router: Router,
   ) { }
 
   ngOnInit() {
@@ -553,5 +555,9 @@ Gerado pelo app Lista de Compras 📱
       position: 'top'
     });
     toast.present();
+  }
+
+  goBack() {
+    this.router.navigate(['/home']);
   }
 }

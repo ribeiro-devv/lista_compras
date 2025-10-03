@@ -1,0 +1,20 @@
+<div class="pix-modal">
+  <div class="pix-header">
+    <h2>Quer Doar?</h2>
+  </div>
+
+  <div class="pix-body">
+    <p>Ajude a manter esse projeto no ar! 🙏</p>
+    <label>Pix:</label>
+    <input type="text" [value]="pixKey" readonly />
+  </div>
+
+  <div class="pix-footer">
+    <ion-button color="success" expand="block" (click)="copiarPix()">
+      Copiar chave Pix
+    </ion-button>
+    <ion-button color="medium" expand="block" (click)="fechar()">
+      Fechar
+    </ion-button>
+  </div>
+</div>  

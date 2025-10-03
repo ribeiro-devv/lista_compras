@@ -8,6 +8,7 @@ import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/
 import { TourService } from 'src/app/services/tour.service';
 import { Router } from '@angular/router';
 import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
+import { PixModalComponent } from 'src/app/components/pix-modal/pix-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -179,30 +180,36 @@ export class HomePage {
   }
 
   async showPix() {
-    const alert = await this.alertCtrl.create({
-      header: 'Quer Doar?',
-      subHeader: 'Ajude a manter esse projeto no ar!',
-      message: '🙏 <br><br> Pix:',
-      mode: 'ios',
-      inputs: [
-        {
-          value: 'matheus.ribeiro6611@gmail.com',
-          disabled: true
-        }
-      ],
-      buttons: [
-        {
-          text: 'Copiar chave Pix',
-          handler: () => {
-            const chave = 'matheus.ribeiro6611@gmail.com';
-            navigator.clipboard.writeText(chave).then(() => {
-              this.showSimpleAlert('Chave PIX copiada!');
-            });
-          }
-        }
-      ]
+    const modal = await this.modalCtrl.create({
+      component: PixModalComponent,
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
     });
-    await alert.present();
+    await modal.present();
+    // const alert = await this.alertCtrl.create({
+    //   header: 'Quer Doar?',
+    //   subHeader: 'Ajude a manter esse projeto no ar!',
+    //   message: '🙏 <br><br> Pix:',
+    //   mode: 'ios',
+    //   inputs: [
+    //     {
+    //       value: 'matheus.ribeiro6611@gmail.com',
+    //       disabled: true
+    //     }
+    //   ],
+    //   buttons: [
+    //     {
+    //       text: 'Copiar chave Pix',
+    //       handler: () => {
+    //         const chave = 'matheus.ribeiro6611@gmail.com';
+    //         navigator.clipboard.writeText(chave).then(() => {
+    //           this.showSimpleAlert('Chave PIX copiada!');
+    //         });
+    //       }
+    //     }
+    //   ]
+    // });
+    // await alert.present();
   }
 
   getTotalGeral(): number {

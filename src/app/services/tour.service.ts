@@ -84,9 +84,9 @@ export class TourService {
     }
   ];
 
-  private currentStepIndex = new BehaviorSubject<number>(0);
-  private isTourActive = new BehaviorSubject<boolean>(false);
-  private isTourCompleted = new BehaviorSubject<boolean>(false);
+  currentStepIndex = new BehaviorSubject<number>(0);
+  isTourActive = new BehaviorSubject<boolean>(false);
+  isTourCompleted = new BehaviorSubject<boolean>(false);
 
   constructor() {
     this.loadTourState();

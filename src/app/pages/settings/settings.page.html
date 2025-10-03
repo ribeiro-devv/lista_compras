@@ -1,5 +1,5 @@
 <ion-header [translucent]="true">
-  <ion-toolbar color="success">
+  <ion-toolbar color="primary">
     <ion-buttons slot="start">
       <ion-button (click)="goBack()">
         <ion-icon name="arrow-back"></ion-icon>
@@ -11,14 +11,13 @@
 
 <ion-content [fullscreen]="true" class="settings-content">
   
-  <!-- Seção do Perfil do Usuário -->
   <ion-card class="profile-card">
-    <ion-card-header>
+    <!-- <ion-card-header>
       <ion-card-title>
         <ion-icon name="person-circle" class="profile-icon"></ion-icon>
         Perfil do Usuário
       </ion-card-title>
-    </ion-card-header>
+    </ion-card-header> -->
     
     <ion-card-content>
       <div class="profile-info">
@@ -40,6 +39,22 @@
       <ion-button expand="block" fill="outline" (click)="editProfile()">
         <ion-icon name="create" slot="start"></ion-icon>
         Editar Perfil
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card class="settings-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="cash-outline" class="settings-icon"></ion-icon>
+        Ajude a manter o projeto no ar!
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <ion-button expand="block" fill="outline" (click)="showPix()">
+        <ion-icon name="create" slot="start"></ion-icon>
+        Doação
       </ion-button>
     </ion-card-content>
   </ion-card>

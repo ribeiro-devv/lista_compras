@@ -25,6 +25,8 @@
 @import "~@ionic/angular/css/text-transformation.css";
 @import "~@ionic/angular/css/flex-utils.css";
 
+@import 'assets/partials/_colors.scss';
+
 .hidden-input {
     display: none !important;
 }
@@ -46,7 +48,7 @@ ion-modal.add-produto-modal {
 
 ion-modal.add-produto-modal::part(content) {
   border-radius: 16px;
-  overflow-y: auto;
+  // overflow-y: auto;
   padding: 16px;
   width: 100%;
 }
