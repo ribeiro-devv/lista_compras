@@ -1,36 +1,90 @@
 import { Injectable } from '@angular/core';
-import { ActionSheetController } from '@ionic/angular';
 import { HistoricoService, ItemCompra } from './historico.service';
 import { CatalogoService } from './catalogo.service';
+
+import { Firestore, collection, addDoc, collectionData, doc, deleteDoc, updateDoc, query, orderBy, onSnapshot, writeBatch } from '@angular/fire/firestore';
+import { Observable, Subscription } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TarefaService {
   private readonly STORAGE_KEY = 'tarefaCollection';
+  private readonly FIREBASE_COLLECTION = 'listaCompras';
   codMostrar: boolean = false;
 
+  private firestoreSubscription?: Subscription;
+  private isUpdatingFromFirestore = false; // Flag para evitar loop infinito
+
   constructor(
-    private actionSheetCtrl: ActionSheetController,
     private historicoService: HistoricoService,
-    private catalogoService: CatalogoService
-  ) { }
+    private catalogoService: CatalogoService,
+    private firestore: Firestore
+  ) { 
+    this.iniciarSincronizacao();
+  }
+
+  private iniciarSincronizacao() {
+    const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
+    const q = query(listaRef, orderBy('codigo', 'asc'));
+
+    // Escuta mudanças no Firestore
+    onSnapshot(q, (snapshot) => {
+      if (this.isUpdatingFromFirestore) return; // Evita loop
+
+      const itensFirestore = snapshot.docs.map(doc => ({
+        firebaseId: doc.id,
+        ...doc.data()
+      }));
+
+      // Se houver diferença, atualiza localStorage
+      const localCollection = this.getCollection();
+      if (JSON.stringify(itensFirestore) !== JSON.stringify(localCollection)) {
+        this.isUpdatingFromFirestore = true;
+        this.saveCollection(itensFirestore);
+        this.isUpdatingFromFirestore = false;
+        console.log('✅ Lista sincronizada do Firebase');
+      }
+    });
+  }
+
 
   async salvar(tarefa: any, callback = null) {
     tarefa.feito = false;
     
-    let collection = this.getCollection();
+    let collections = this.getCollection();
     
     // Gerar próximo código baseado no último item
-    if (collection.length > 0) {
-      const ultimoItem = collection[collection.length - 1];
+    if (collections.length > 0) {
+      const ultimoItem = collections[collections.length - 1];
       tarefa.codigo = ultimoItem.codigo + 1;
     } else {
       tarefa.codigo = 1; // Primeiro item começa com código 1
     }
 
-    collection.push(tarefa);
-    this.saveCollection(collection);
+    tarefa.criadoEm = new Date().toISOString();
+
+    collections.push(tarefa);
+    this.saveCollection(collections);
+
+    try {
+      const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
+      const docRef = await addDoc(listaRef, tarefa);
+      
+      // Atualiza com o ID do Firebase
+      tarefa.firebaseId = docRef.id;
+      const index = collections.findIndex(item => item.codigo === tarefa.codigo);
+      if (index !== -1) {
+        collection[index] = tarefa;
+        this.saveCollection(collections);
+      }
+      
+      console.log('✅ Item salvo no Firebase:', docRef.id);
+    } catch (error) {
+      console.error('❌ Erro ao salvar no Firebase:', error);
+      // Continua funcionando offline
+    }
+    
 
     if (callback != null) {
       callback(); 
@@ -58,6 +112,20 @@ export class TarefaService {
     if (callback != null) {
       callback();
     }
+
+    if (tarefa.firebaseId) {
+      try {
+        const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
+        deleteDoc(docRef);
+        console.log('✅ Item excluído do Firebase');
+      } catch (error) {
+        console.error('❌ Erro ao excluir do Firebase:', error);
+      }
+    }
+
+    if (callback != null) {
+      callback();
+    }
   }
 
   atualizar(tarefa: any, callback = null) {
@@ -75,6 +143,23 @@ export class TarefaService {
 
       this.saveCollection(collection);
     }
+
+    // Atualizar no Firestore
+      if (tarefa.firebaseId) {
+        try {
+          const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
+          updateDoc(docRef, {
+            feito: tarefa.feito,
+            valorUnitario: tarefa.valorUnitario,
+            quantidade: tarefa.quantidade,
+            atualizadoEm: new Date().toISOString()
+          });
+          console.log('✅ Item atualizado no Firebase');
+        } catch (error) {
+          console.error('❌ Erro ao atualizar no Firebase:', error);
+        }
+      }
+
 
     if (callback != null) {
       callback();
