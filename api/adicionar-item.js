@@ -77,7 +77,7 @@ export default async function handler(req, res) {
     console.error('❌ Erro ao adicionar item:', error);
     return res.status(500).json({
       error: 'Erro ao adicionar item',
-      speechText: 'Desculpe, houve um erro ao adicionar o item. Tente novamente mais tarde.',
+      speechText: 'Desculpe, houve um erro ao adicionar o item. Tente novamente mais tarde. ' + error,
     });
   }
 }
