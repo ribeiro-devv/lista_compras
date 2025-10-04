@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ModalController } from '@ionic/angular';
+import { UtilsService } from 'src/app/services/utils/utils.service';
 
 @Component({
   selector: 'app-pix-modal',
@@ -11,7 +12,8 @@ export class PixModalComponent implements OnInit {
   pixKey: string = 'teste_zezinho_123';
 
   constructor(
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private service: UtilsService
   ) { }
 
   fechar() {
@@ -20,7 +22,8 @@ export class PixModalComponent implements OnInit {
 
   copiarPix() {
     navigator.clipboard.writeText(this.pixKey).then(() => {
-      alert('Chave PIX copiada!');
+      this.service.showToast(`Chave PIX copiada com sucesso!`, 'success');
+      this.fechar();
     });
   }
 

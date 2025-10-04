@@ -8,7 +8,7 @@ import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/
 import { TourService } from 'src/app/services/tour.service';
 import { Router } from '@angular/router';
 import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
-import { PixModalComponent } from 'src/app/components/pix-modal/pix-modal.component';
+import { UtilsService } from 'src/app/services/utils/utils.service';
 
 @Component({
   selector: 'app-home',
@@ -26,7 +26,7 @@ export class HomePage {
     private modalCtrl: ModalController,
     private router: Router,
     private tourService: TourService,
-    private toastController: ToastController
+    private utilsService: UtilsService 
   ) { }
 
   ionViewDidEnter() {
@@ -96,7 +96,7 @@ export class HomePage {
   
         this.tarefaService.salvar(dados, () => {
           this.listarTarefa();
-          this.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
+          this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
         });
       }
     });
@@ -120,7 +120,7 @@ export class HomePage {
           handler: () => {
             this.tarefaService.excluir(item, () => {
               this.listarTarefa();
-              this.showToast(`Produto ${item.tarefa} removido na lista com sucesso`, 'success');
+              this.utilsService.showToast(`Produto ${item.tarefa} removido na lista com sucesso`, 'success');
             });
           }
         }
@@ -141,13 +141,13 @@ export class HomePage {
       if (result.role === 'confirm') {
         const dadosEditados = result.data;
         if (!dadosEditados.tarefa || dadosEditados.tarefa.trim() === '') {
-          this.showToast(`O nome do produto não pode estar vazio`, 'danger');
+          this.utilsService.showToast(`O nome do produto não pode estar vazio`, 'danger');
           return;
         }
         dadosEditados.codigo = tarefa.codigo;
         this.tarefaService.edicao(dadosEditados, () => {
           this.listarTarefa();
-          this.showToast(`Produto ${dadosEditados.tarefa} editada com sucesso`, 'success');
+          this.utilsService.showToast(`Produto ${dadosEditados.tarefa} editada com sucesso`, 'success');
         });
       }
     });
@@ -219,7 +219,7 @@ export class HomePage {
           tarefa.quantidade = dados.quantidade
           this.tarefaService.atualizar(tarefa, () => {
             this.listarTarefa();
-            this.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
+            this.utilsService.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
           });
         }
       }
@@ -233,6 +233,8 @@ export class HomePage {
       this.tourService.startTour();
     }, 500);
   }
+
+
 
 
 
@@ -333,7 +335,7 @@ export class HomePage {
             tarefa.feito = false;
             this.tarefaService.atualizar(tarefa, () => {
               this.listarTarefa();
-              this.showToast(`Produto ${tarefa.tarefa} removido do carrinho`, 'warning');
+              this.utilsService.showToast(`Produto ${tarefa.tarefa} removido do carrinho`, 'warning');
             });
           }
         }
@@ -357,25 +359,6 @@ export class HomePage {
     });
   
     await modal.present();
-  }
-
-  private async showToast(message: string, color: string = 'primary') {
-    const toast = await this.toastController.create({
-      message,
-      duration: 2000,
-      position: 'bottom',
-      color,
-      buttons: [
-        {
-          side: 'end',
-          icon: 'close',
-          handler: () => {
-            toast.dismiss();
-          }
-        }
-      ]
-    });
-    toast.present();
   }
 
   private async showSimpleAlert(message: string) {
@@ -409,10 +392,10 @@ export class HomePage {
           handler: () => {
             try {
               const listaArquivada = this.tarefaService.arquivarListaAtual();
-              this.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
+              this.utilsService.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
               this.listarTarefa();
             } catch (error) {
-              this.showSimpleAlert('Erro ao arquivar a lista. Tente novamente.');
+              this.utilsService.showToast(`Erro ao arquivar a lista. Tente novamente.`, 'danger');
             }
           }
         }
