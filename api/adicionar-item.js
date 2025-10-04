@@ -125,7 +125,7 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
       error: 'Erro interno do servidor',
-      speechText: 'Desculpe, houve um erro ao adicionar o item.',
+      speechText: 'Desculpe, houve um erro ao adicionar o item.' + error.message,
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
