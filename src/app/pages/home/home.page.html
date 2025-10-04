@@ -3,18 +3,111 @@
     <ion-title class="animate__animated animate__backInDown">
       Lista de Compras
     </ion-title>
-    <ion-buttons slot="end">
+    <!-- <ion-buttons slot="end">
       <ion-button (click)="openHistorico()">
         <ion-icon name="analytics-outline"></ion-icon>
       </ion-button>
       <ion-button (click)="openSettings()">
         <ion-icon name="settings"></ion-icon>
       </ion-button>
-    </ion-buttons>
+    </ion-buttons> -->
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  
+  <!-- Cards de ações rápidas -->
+  <div class="quick-actions-container">
+    <div class="quick-actions-scroll">
+      <!-- Card: Adicionar Produto -->
+      <div class="action-card" (click)="showAdd()">
+        <div class="action-card-icon">
+          <ion-icon name="add-circle-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Adicionar</h3>
+          <p>Novo produto na Lista</p>
+        </div>
+      </div>
+
+      <!-- Card: Histórico -->
+      <div class="action-card" (click)="openHistorico()">
+        <div class="action-card-icon">
+          <ion-icon name="analytics-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Histórico</h3>
+          <p>Ver compras</p>
+        </div>
+      </div>
+
+      <!-- Card: Estatísticas (fictício) -->
+      <div class="action-card" (click)="showComingSoon('Estatísticas')">
+        <div class="action-card-icon">
+          <ion-icon name="bar-chart-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Estatísticas</h3>
+          <p>Ver dados</p>
+        </div>
+      </div>
+
+      <!-- Card: Categorias (fictício) -->
+      <div class="action-card" (click)="showComingSoon('Categorias')">
+        <div class="action-card-icon">
+          <ion-icon name="pricetags-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Categorias</h3>
+          <p>Organizar</p>
+        </div>
+      </div>
+
+      <!-- Card: Favoritos (fictício) -->
+      <div class="action-card" (click)="showComingSoon('Favoritos')">
+        <div class="action-card-icon">
+          <ion-icon name="heart-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Favoritos</h3>
+          <p>Mais comprados</p>
+        </div>
+      </div>
+
+      <!-- Card: Compartilhar (fictício) -->
+      <div class="action-card" (click)="showComingSoon('Compartilhar')">
+        <div class="action-card-icon">
+          <ion-icon name="share-social-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Compartilhar</h3>
+          <p>Enviar lista</p>
+        </div>
+      </div>
+
+      <!-- Card: Calculadora (fictício) -->
+      <div class="action-card" (click)="showComingSoon('Calculadora')">
+        <div class="action-card-icon">
+          <ion-icon name="calculator-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Calculadora</h3>
+          <p>Orçamento</p>
+        </div>
+      </div>
+
+      <!-- Card: Configurações -->
+      <div class="action-card" (click)="openSettings()">
+        <div class="action-card-icon">
+          <ion-icon name="settings-outline"></ion-icon>
+        </div>
+        <div class="action-card-content">
+          <h3>Configurações</h3>
+          <p>Ajustes</p>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <!-- Mensagem quando não há produtos -->
   <div *ngIf="tarefaCollection.length === 0" class="empty-state">
@@ -63,7 +156,7 @@
         <ion-icon 
           slot="start" 
           [name]="item.feito ? 'checkmark-circle' : 'information-circle'" 
-          [color]="item.feito ? 'success' : 'danger'">
+          [color]="item.feito ? 'success' : 'warning'">
         </ion-icon>
       </ion-item>
       
@@ -85,14 +178,6 @@
       </ion-card-title>
     </ion-card-header>
     <ion-card-content class="totals-content">
-      <!-- <div class="total-row">
-        <span class="total-label">Pendente:</span>
-        <span class="total-value pending">{{formatarMoeda(getTotalPendente())}}</span>
-      </div> -->
-      <!-- <div class="total-row">
-        <span class="total-label">Já Comprado:</span>
-        <span class="total-value success">{{formatarMoeda(getTotalComprado())}}</span>
-      </div> -->
       <ion-item class="total-geral">
         <ion-label>
           <h2><strong>Total Comprado</strong></h2>
@@ -106,29 +191,23 @@
 
   <!-- Floating Action Buttons -->
   
-  <!-- Botão PIX (topo) -->
-  <ion-fab vertical="top" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="showPix()" color="success" class="animate__animated animate__bounce" size="small">
-      <ion-icon name="cash-outline"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
-  
   <!-- Botão Tour (ao lado do Excluir Todos) -->
-  <ion-fab vertical="bottom" horizontal="start" slot="fixed" style="left: 3%;">
+   
+  <ion-fab *ngIf="!tourService.isTourCompletedOnce()" vertical="bottom" horizontal="start" slot="fixed" style="left: 3%; margin-bottom: 10px;">
     <ion-fab-button (click)="restartTour()" color="tertiary" class="animate__animated animate__bounce" size="small">
       <ion-icon name="help-circle-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>
   
   <!-- Botão Adicionar (principal) -->
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed" style="margin-bottom: 10px;">
     <ion-fab-button (click)="showAdd()" color="primary" class="animate__animated animate__bounce">
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
   
   <!-- Botão Excluir Todos (só aparece quando há itens) -->
-  <ion-fab vertical="bottom" horizontal="start" slot="fixed" *ngIf="tarefaCollection.length > 0">
+  <ion-fab vertical="bottom" horizontal="start" slot="fixed" *ngIf="tarefaCollection.length > 0" style="margin-bottom: 10px;">
     <ion-fab-button (click)="showExclusion()" color="danger" class="animate__animated animate__bounce" size="small">
       <ion-icon name="trash-outline"></ion-icon>
     </ion-fab-button>
