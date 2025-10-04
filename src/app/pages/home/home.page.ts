@@ -79,7 +79,7 @@ export class HomePage {
     modal.onDidDismiss().then((result) => {
       if (result.role === 'confirm') {
         const dados = result.data;
-        // Validação
+
         if (!dados.tarefa || dados.tarefa.trim() === '') {
           this.showSimpleAlert('O nome do produto não pode estar vazio');
           return;
@@ -96,10 +96,10 @@ export class HomePage {
   
         this.tarefaService.salvar(dados, () => {
           this.listarTarefa();
+          this.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
         });
       }
     });
-  
     await modal.present();
   }
 
@@ -120,6 +120,7 @@ export class HomePage {
           handler: () => {
             this.tarefaService.excluir(item, () => {
               this.listarTarefa();
+              this.showToast(`Produto ${item.tarefa} removido na lista com sucesso`, 'success');
             });
           }
         }
@@ -140,12 +141,13 @@ export class HomePage {
       if (result.role === 'confirm') {
         const dadosEditados = result.data;
         if (!dadosEditados.tarefa || dadosEditados.tarefa.trim() === '') {
-          this.showSimpleAlert('O nome do produto não pode estar vazio');
+          this.showToast(`O nome do produto não pode estar vazio`, 'danger');
           return;
         }
         dadosEditados.codigo = tarefa.codigo;
         this.tarefaService.edicao(dadosEditados, () => {
           this.listarTarefa();
+          this.showToast(`Produto ${dadosEditados.tarefa} editada com sucesso`, 'success');
         });
       }
     });
@@ -177,39 +179,6 @@ export class HomePage {
       ]
     });
     await alert.present();
-  }
-
-  async showPix() {
-    const modal = await this.modalCtrl.create({
-      component: PixModalComponent,
-      cssClass: 'add-produto-modal',
-      backdropDismiss: false
-    });
-    await modal.present();
-    // const alert = await this.alertCtrl.create({
-    //   header: 'Quer Doar?',
-    //   subHeader: 'Ajude a manter esse projeto no ar!',
-    //   message: '🙏 <br><br> Pix:',
-    //   mode: 'ios',
-    //   inputs: [
-    //     {
-    //       value: 'matheus.ribeiro6611@gmail.com',
-    //       disabled: true
-    //     }
-    //   ],
-    //   buttons: [
-    //     {
-    //       text: 'Copiar chave Pix',
-    //       handler: () => {
-    //         const chave = 'matheus.ribeiro6611@gmail.com';
-    //         navigator.clipboard.writeText(chave).then(() => {
-    //           this.showSimpleAlert('Chave PIX copiada!');
-    //         });
-    //       }
-    //     }
-    //   ]
-    // });
-    // await alert.present();
   }
 
   getTotalGeral(): number {
@@ -250,11 +219,11 @@ export class HomePage {
           tarefa.quantidade = dados.quantidade
           this.tarefaService.atualizar(tarefa, () => {
             this.listarTarefa();
+            this.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
           });
         }
       }
     });
-    // this.showToast(`"${tarefa.tarefa}" adicionado ao carrinho!`, 'success');
     await modal.present();
   }
 
@@ -364,7 +333,7 @@ export class HomePage {
             tarefa.feito = false;
             this.tarefaService.atualizar(tarefa, () => {
               this.listarTarefa();
-              // this.showToast(`"${tarefa.tarefa}" removido do carrinho`, 'warning');
+              this.showToast(`Produto ${tarefa.tarefa} removido do carrinho`, 'warning');
             });
           }
         }
@@ -372,8 +341,6 @@ export class HomePage {
     });
     await actionSheet.present();
   }
-
-  
 
   async mostrarDetalhes(tarefa: any) {
     const modal = await this.modalCtrl.create({
@@ -385,7 +352,7 @@ export class HomePage {
   
     modal.onDidDismiss().then(result => {
       if (result.role === 'editar') {
-        this.editar(result.data); // chama o modal de edição que você já tem
+        this.editar(result.data);
       }
     });
   
