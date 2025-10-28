@@ -8,6 +8,7 @@ export interface ItemCompra {
   feito: boolean;
   dataCompra?: string;
   categoria?: string;
+  firebaseId?: string;
 }
 
 export interface ListaCompra {

@@ -251,3 +251,28 @@ ion-input.is-invalid::part(native):focus {
     }
   }
 }
+
+.trash-loading {
+  .loading-wrapper {
+    box-shadow: none;
+  }
+
+  --spinner-color: #2123ab00;
+  --color: #ffc40000;
+  
+  .loading-spinner {
+    position: relative;
+    width: 55px;
+    height: 65px;
+    margin: 0 auto 15px;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      width: 80px;
+      height: 90px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='90' viewBox='0 0 65 75'%3E%3Crect x='12' y='35' width='31' height='23' rx='4' fill='%2321ab76'/%3E%3Crect x='18' y='15' width='19' height='7' rx='2' fill='%231c9568'/%3E%3Crect x='10' y='34' width='35' height='5' rx='2.5' fill='%23177f5a'/%3E%3Crect x='17' y='13' width='21' height='4' rx='2' fill='%2312694c'/%3E%3Crect x='24' y='10' width='7' height='9' rx='1' fill='%23FFD600'%3E%3Canimate attributeName='y' values='10;32;36' keyTimes='0;0.7;1' dur='1.4s' repeatCount='indefinite'/%3E%3Canimate attributeName='opacity' values='1;1;0' keyTimes='0;0.8;1' dur='1.4s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+  }
+}

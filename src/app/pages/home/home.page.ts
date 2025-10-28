@@ -9,6 +9,7 @@ import { TourService } from 'src/app/services/tour.service';
 import { Router } from '@angular/router';
 import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
 import { UtilsService } from 'src/app/services/utils/utils.service';
+import { ExcluirTodosModalComponent } from 'src/app/components/excluir-todos-modal/excluir-todos-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -157,28 +158,51 @@ export class HomePage {
 
 
   async showExclusion() {
-    const alert = await this.alertCtrl.create({
-      header: 'Excluir Todos os Produtos?',
-      message: 'Esta ação não pode ser desfeita.',
-      mode: 'ios',
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-          cssClass: 'secondary'
-        },
-        {
-          text: 'Excluir Tudo',
-          cssClass: 'danger',
-          handler: () => {
-            this.tarefaService.excluirTodos(() => {
-              this.listarTarefa();
-            });
-          }
-        }
-      ]
+    const modal = await this.modalCtrl.create({
+      component: ExcluirTodosModalComponent,
+      componentProps: {},
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
+    });   
+
+    modal.onDidDismiss().then(async (result)  => {
+      if (result.role === 'confirm') {
+        const loading = await this.utilsService.showLoading('Excluindo todos...');
+        
+        setTimeout(() => {
+          this.tarefaService.excluirTodos(() => {
+            this.listarTarefa();
+            this.utilsService.showToast(`Todos os produtos foram excluídos com sucesso`, 'success');
+            if (loading) loading.dismiss();
+          });
+        }, 1000);
+      }
     });
-    await alert.present();
+
+    await modal.present();
+
+    // const alert = await this.alertCtrl.create({
+    //   header: 'Excluir Todos os Produtos?',
+    //   message: 'Esta ação não pode ser desfeita.',
+    //   mode: 'ios',
+    //   buttons: [
+    //     {
+    //       text: 'Cancelar',
+    //       role: 'cancel',
+    //       cssClass: 'secondary'
+    //     },
+    //     {
+    //       text: 'Excluir Tudo',
+    //       cssClass: 'danger',
+    //       handler: () => {
+    //         this.tarefaService.excluirTodos(() => {
+    //           this.listarTarefa();
+    //         });
+    //       }
+    //     }
+    //   ]
+    // });
+    // await alert.present();
   }
 
   getTotalGeral(): number {
@@ -234,13 +258,6 @@ export class HomePage {
     }, 500);
   }
 
-
-
-
-
-
-
-
   async openActions(tarefa: any) {
     const actionSheet = await this.actionSheetCtrl.create({
       header: `Ações para "${tarefa.tarefa}"`,
@@ -261,7 +278,6 @@ export class HomePage {
           }
         },
         
-        // Editar produto (só se não estiver no carrinho)
         ...(tarefa.feito ? [] : [{
           text: 'Editar Produto',
           icon: 'pencil',
@@ -271,7 +287,6 @@ export class HomePage {
           }
         }]),
 
-        // Ver detalhes
         {
           text: 'Ver Detalhes',
           icon: 'information-circle',
@@ -281,7 +296,6 @@ export class HomePage {
           }
         },
 
-        // Separador visual
         {
           text: '',
           icon: '',
@@ -289,7 +303,6 @@ export class HomePage {
           handler: () => false
         },
 
-        // Excluir (sempre no final)
         {
           text: 'Excluir Produto',
           icon: 'trash',
@@ -299,7 +312,6 @@ export class HomePage {
           }
         },
 
-        // Cancelar
         {
           text: 'Cancelar',
           icon: 'close',
@@ -312,14 +324,12 @@ export class HomePage {
     await actionSheet.present();
   }
 
-  // Métodos auxiliares para as ações
   private adicionarAoCarrinho(tarefa: any) {
     this.solicitarValorUnitario(tarefa);
   }
 
   async removerDoCarrinho(tarefa: any) {
     const actionSheet = await this.actionSheetCtrl.create({
-    // const alert = this.alertCtrl.create({
       header: 'Remover do Carrinho',
       subHeader: `Deseja remover "${tarefa.tarefa}" do carrinho?`,
       mode: 'ios',
@@ -389,11 +399,15 @@ export class HomePage {
         },
         {
           text: 'Arquivar',
-          handler: () => {
+          handler: async () => {
             try {
-              const listaArquivada = this.tarefaService.arquivarListaAtual();
-              this.utilsService.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
+              const loading = await this.utilsService.showLoading('Arquivando lista...');
+
+              const listaArquivada = await this.tarefaService.arquivarListaAtual();
+              
+              if (loading) await loading.dismiss();
               this.listarTarefa();
+              this.utilsService.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
             } catch (error) {
               this.utilsService.showToast(`Erro ao arquivar a lista. Tente novamente.`, 'danger');
             }

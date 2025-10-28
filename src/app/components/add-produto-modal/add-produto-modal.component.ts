@@ -16,7 +16,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
   termoBusca: string = '';
   mostrarCatalogo: boolean = false;
   produtoSelecionado: ProdutoCatalogo | null = null;
-  modoBusca: boolean = true;
+  modoBusca: boolean = false;
 
   @ViewChild('nomeProdutoInput', { static: false }) nomeProdutoInput!: IonInput;
 

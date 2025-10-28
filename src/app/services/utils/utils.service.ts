@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ToastController } from '@ionic/angular';
+import { LoadingController, ToastController } from '@ionic/angular';
 
 @Injectable({
   providedIn: 'root'
@@ -7,7 +7,8 @@ import { ToastController } from '@ionic/angular';
 export class UtilsService {
 
   constructor(
-    private toastController: ToastController
+    private toastController: ToastController,
+    private loadingCtrl: LoadingController
   ) { }
 
   async showToast(message: string, color: string = 'primary') {
@@ -27,5 +28,18 @@ export class UtilsService {
       ]
     });
     toast.present();
+  }
+
+  async showLoading(message: string = 'Jogando fora...') {
+    const loading = await this.loadingCtrl.create({
+      message: message,
+      spinner: 'circles', // ou null se quiser só o texto
+      cssClass: 'trash-loading',
+      showBackdrop: true,
+      backdropDismiss: false
+    });
+    
+    await loading.present();
+    return loading;
   }
 }

@@ -225,8 +225,12 @@ export class TarefaService {
   //     }, 0);
   // }
 
-  excluirTodos(callback = null) {
-    this.saveCollection([]); // Simplesmente limpa o array
+  async excluirTodos(callback = null) {
+
+    const collection = this.getCollection();
+    await this.excluirTodosDoFirebase(collection);
+
+    this.saveCollection([]);
 
     if (callback != null) {
       callback();
@@ -269,7 +273,7 @@ export class TarefaService {
   }
 
   // Método para arquivar a lista atual no histórico
-  arquivarListaAtual(nomeCustomizado?: string): any {
+  async arquivarListaAtual(nomeCustomizado?: string): Promise<any> {
     const collection = this.getCollection();
     const itensParaArquivar: ItemCompra[] = collection.map(item => ({
       codigo: item.codigo,
@@ -282,11 +286,43 @@ export class TarefaService {
 
     const listaArquivada = this.historicoService.arquivarListaAtual(itensParaArquivar, nomeCustomizado);
     
-    // Limpar a lista atual após arquivar
-    this.excluirTodos();
+    await this.excluirTodosDoFirebase(collection);
+    
+    this.saveCollection([]);
     
     return listaArquivada;
   }
+
+  private async excluirTodosDoFirebase(itens: any[]): Promise<void> {
+    if (itens.length === 0) return;
+  
+    try {
+      this.isUpdatingFromFirestore = true;
+  
+      const batch = writeBatch(this.firestore);
+      
+      itens.forEach(item => {
+        if (item.firebaseId) {
+          const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, item.firebaseId);
+          batch.delete(docRef);
+        }
+      });
+  
+      await batch.commit();
+      console.log('✅ Todos os itens excluídos do Firebase ao arquivar');
+      
+      // Aguarda um pouco antes de liberar a flag
+      setTimeout(() => {
+        this.isUpdatingFromFirestore = false;
+      }, 500);
+      
+    } catch (error) {
+      console.error('❌ Erro ao excluir itens do Firebase:', error);
+      this.isUpdatingFromFirestore = false;
+      throw error;
+    }
+  }
+  
 
   // Método auxiliar para classificar itens usando o catálogo
   private classificarItem(nomeItem: string): string {
