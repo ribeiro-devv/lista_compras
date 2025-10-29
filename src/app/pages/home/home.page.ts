@@ -156,6 +156,34 @@ export class HomePage {
     await modal.present();
   }
 
+  async solicitarValorUnitario(tarefa: any) {
+    const modal = await this.modalCtrl.create({
+      component: InformacoesModalComponent,
+      componentProps: { tarefa },
+      cssClass: 'add-produto-modal',
+      backdropDismiss: false
+    });
+  
+    modal.onDidDismiss().then(async (result) => {
+      if (result.role === 'confirm') {
+        const dados = result.data;
+        if (dados.valorUnitario !== undefined && dados.valorUnitario !== null && !isNaN(dados.valorUnitario)) {
+          const loading = await this.utilsService.showCartLoading('Adicionando ao carrinho...');
+          tarefa.feito = true;
+          tarefa.valorUnitario = dados.valorUnitario;
+          tarefa.quantidade = dados.quantidade
+          setTimeout(() => {
+            this.tarefaService.atualizar(tarefa, () => {
+              this.listarTarefa();
+              this.utilsService.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
+              if (loading) loading.dismiss();
+            });
+          }, 9000);
+        }
+      }
+    });
+    await modal.present();
+  }
 
   async showExclusion() {
     const modal = await this.modalCtrl.create({
@@ -224,31 +252,6 @@ export class HomePage {
     const quantidade = parseFloat(item.quantidade) || 0;
     const valorUnitario = parseFloat(item.valorUnitario) || 0;
     return quantidade * valorUnitario;
-  }
-
-  async solicitarValorUnitario(tarefa: any) {
-    const modal = await this.modalCtrl.create({
-      component: InformacoesModalComponent,
-      componentProps: { tarefa },
-      cssClass: 'add-produto-modal',
-      backdropDismiss: false
-    });
-  
-    modal.onDidDismiss().then((result) => {
-      if (result.role === 'confirm') {
-        const dados = result.data;
-        if (dados.valorUnitario !== undefined && dados.valorUnitario !== null && !isNaN(dados.valorUnitario)) {
-          tarefa.feito = true;
-          tarefa.valorUnitario = dados.valorUnitario;
-          tarefa.quantidade = dados.quantidade
-          this.tarefaService.atualizar(tarefa, () => {
-            this.listarTarefa();
-            this.utilsService.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
-          });
-        }
-      }
-    });
-    await modal.present();
   }
 
   restartTour() {

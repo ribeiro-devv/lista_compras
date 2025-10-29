@@ -276,3 +276,28 @@ ion-input.is-invalid::part(native):focus {
     }
   }
 }
+
+.cart-loading {
+  .loading-wrapper {
+    box-shadow: none;
+  }
+
+  --spinner-color: #2123ab00;
+  --color: #ffc40000;
+  
+  .loading-spinner {
+    position: relative;
+    width: 80px;
+    height: 90px;
+    margin: 0 auto 15px;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      width: 80px;
+      height: 90px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='90' viewBox='0 0 80 90'%3E%3C!-- Carrinho --%3E%3Cpath d='M25 35h30l5 25H20l5-25z' fill='%2321ab76'/%3E%3Ccircle cx='30' cy='70' r='5' fill='%23333'/%3E%3Ccircle cx='50' cy='70' r='5' fill='%23333'/%3E%3C!-- Produto entrando --%3E%3Crect id='cart-product' x='15' y='10' width='15' height='12' rx='2' fill='%23FFD600'%3E%3Canimate attributeName='y' values='10;25;28' keyTimes='0;0.7;1' dur='1.2s' repeatCount='indefinite'/%3E%3Canimate attributeName='x' values='15;25;25' keyTimes='0;0.7;1' dur='1.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+  }
+}

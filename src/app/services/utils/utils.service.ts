@@ -42,4 +42,17 @@ export class UtilsService {
     await loading.present();
     return loading;
   }
+
+  async showCartLoading(message: string = 'Adicionando ao carrinho...') {
+    const loading = await this.loadingCtrl.create({
+      message: message,
+      spinner: 'circles',
+      cssClass: 'cart-loading',
+      showBackdrop: true,
+      backdropDismiss: false
+    });
+    
+    await loading.present();
+    return loading;
+  }
 }
