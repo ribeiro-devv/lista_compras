@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ModalController, IonInput } from '@ionic/angular';
+import { ModalController, IonInput, ToastController } from '@ionic/angular';
 import { CatalogoService, ProdutoCatalogo, CategoriaProduto } from '../../services/catalogo.service';
 
 @Component({
@@ -23,12 +23,14 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
   constructor(
     private fb: FormBuilder, 
     private modalCtrl: ModalController,
-    private catalogoService: CatalogoService
+    private catalogoService: CatalogoService,
+    private toastController: ToastController
   ) {
     this.produtoForm = this.fb.group({
       tarefa: ['', Validators.required],
       quantidade: [null, [Validators.min(0)]],
       valorUnitario: [null, [Validators.min(0.00)]],
+      feito: [false],
     });
   }
 
@@ -74,7 +76,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
       tarefa: dados.tarefa,
       quantidade: dados.quantidade ?? 0,
       valorUnitario: Number(valorLimpo),
-      feito: false,
+      feito: dados.feito ?? false,
     };
     this.modalCtrl.dismiss(retorno, 'confirm');
   }
@@ -188,5 +190,141 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
       style: 'currency',
       currency: 'BRL',
     });
+  }
+
+  toggleCarrinho() {
+    const currentValue = this.produtoForm.get('feito')?.value;
+    
+    // Se está tentando ativar (adicionar ao carrinho), precisa validar
+    if (!currentValue) {
+      if (!this.validarCamposParaCarrinho()) {
+        return; // Não permite adicionar se não passar na validação
+      }
+    }
+    
+    this.produtoForm.patchValue({ feito: !currentValue });
+  }
+
+  validarCamposParaCarrinho(): boolean {
+    const tarefa = this.produtoForm.get('tarefa')?.value;
+    const quantidade = this.produtoForm.get('quantidade')?.value;
+    const valorUnitario = this.produtoForm.get('valorUnitario')?.value;
+
+    // Marcar campos como touched para mostrar erros
+    this.produtoForm.get('tarefa')?.markAsTouched();
+    this.produtoForm.get('quantidade')?.markAsTouched();
+    this.produtoForm.get('valorUnitario')?.markAsTouched();
+
+    const erros: string[] = [];
+
+    // Validar nome
+    if (!tarefa || tarefa.trim() === '') {
+      erros.push('Nome do produto é obrigatório');
+    }
+
+    // Validar quantidade
+    if (quantidade === null || quantidade === undefined || quantidade === '' || Number(quantidade) <= 0) {
+      erros.push('Quantidade deve ser maior que zero');
+    }
+
+    // Validar valor unitário
+    if (valorUnitario === null || valorUnitario === undefined || valorUnitario === '') {
+      erros.push('Valor unitário é obrigatório');
+    } else {
+      // Limpar e converter valor para número
+      const valorLimpo = String(valorUnitario).replace(/[^\d,.-]/g, '').replace(',', '.');
+      const valorNumerico = Number(valorLimpo);
+      
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        erros.push('Valor unitário deve ser maior que zero');
+      }
+    }
+
+    // Se houver erros, mostrar toast e retornar false
+    if (erros.length > 0) {
+      this.mostrarToastErro(erros.join(', '));
+      return false;
+    }
+
+    return true;
+  }
+
+  private async mostrarToastErro(mensagem: string) {
+    const toast = await this.toastController.create({
+      message: mensagem,
+      duration: 3000,
+      position: 'top',
+      color: 'danger',
+      buttons: [
+        {
+          side: 'end',
+          icon: 'close',
+          handler: () => {
+            toast.dismiss();
+          }
+        }
+      ]
+    });
+    await toast.present();
+  }
+
+  mostrarErroQuantidade(): boolean {
+    const quantidade = this.produtoForm.get('quantidade');
+    if (!quantidade) return false;
+    
+    const value = quantidade.value;
+    const isInvalid = quantidade.touched && 
+      (value === null || value === undefined || value === '' || Number(value) <= 0);
+    
+    return isInvalid;
+  }
+
+  mostrarErroValor(): boolean {
+    const valorUnitario = this.produtoForm.get('valorUnitario');
+    if (!valorUnitario) return false;
+    
+    const value = valorUnitario.value;
+    if (!valorUnitario.touched) return false;
+    
+    if (value === null || value === undefined || value === '') {
+      return true;
+    }
+    
+    // Limpar e converter valor para número
+    const valorLimpo = String(value).replace(/[^\d,.-]/g, '').replace(',', '.');
+    const valorNumerico = Number(valorLimpo);
+    
+    return isNaN(valorNumerico) || valorNumerico <= 0;
+  }
+
+  podeAdicionarAoCarrinho(): boolean {
+    const tarefa = this.produtoForm.get('tarefa')?.value;
+    const quantidade = this.produtoForm.get('quantidade')?.value;
+    const valorUnitario = this.produtoForm.get('valorUnitario')?.value;
+
+    // Validar nome
+    if (!tarefa || tarefa.trim() === '') {
+      return false;
+    }
+
+    // Validar quantidade
+    if (quantidade === null || quantidade === undefined || quantidade === '' || Number(quantidade) <= 0) {
+      return false;
+    }
+
+    // Validar valor unitário
+    if (valorUnitario === null || valorUnitario === undefined || valorUnitario === '') {
+      return false;
+    }
+    
+    // Limpar e converter valor para número
+    const valorLimpo = String(valorUnitario).replace(/[^\d,.-]/g, '').replace(',', '.');
+    const valorNumerico = Number(valorLimpo);
+    
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      return false;
+    }
+
+    return true;
   }
 }

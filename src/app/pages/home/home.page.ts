@@ -77,7 +77,7 @@ export class HomePage {
       backdropDismiss: false
     });
   
-    modal.onDidDismiss().then((result) => {
+    modal.onDidDismiss().then(async (result) => {
       if (result.role === 'confirm') {
         const dados = result.data;
 
@@ -90,15 +90,27 @@ export class HomePage {
           dados.quantidade = 0;
         }
   
-        console.log(dados.valorUnitario)
         if (!dados.valorUnitario || dados.valorUnitario < 0) {
           dados.valorUnitario = 0;
         }
-  
-        this.tarefaService.salvar(dados, () => {
-          this.listarTarefa();
-          this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
-        });
+
+        dados.feito = dados.feito ?? false;
+
+        if (dados.feito) {
+          const loading = await this.utilsService.showCartLoading('Adicionando ao carrinho...');
+          setTimeout(() => {
+            this.tarefaService.salvar(dados, () => {
+              this.listarTarefa();
+              this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
+              if (loading) loading.dismiss();
+            });
+          }, 1000);
+        } else {
+          this.tarefaService.salvar(dados, () => {
+            this.listarTarefa();
+            this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
+          });
+        }
       }
     });
     await modal.present();
@@ -178,7 +190,7 @@ export class HomePage {
               this.utilsService.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
               if (loading) loading.dismiss();
             });
-          }, 9000);
+          }, 1000);
         }
       }
     });

@@ -278,3 +278,225 @@
     font-size: 0.75rem;
   }
 }
+
+// Estilos do botão de adicionar ao carrinho
+.add-carrinho-container {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.add-carrinho-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-color: #28a745;
+    
+    &::before {
+      left: 100%;
+    }
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  &.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-color: #28a745;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);
+    
+    .carrinho-icon {
+      color: #ffffff;
+      transform: scale(1.1);
+      animation: cartBounce 0.5s ease;
+    }
+    
+    .carrinho-text {
+      color: #ffffff;
+    }
+    
+    .check-icon {
+      color: #ffffff;
+      animation: checkPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    &:hover {
+      background: linear-gradient(135deg, #218838 0%, #1ea080 100%);
+      box-shadow: 0 6px 24px rgba(40, 167, 69, 0.4);
+    }
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e9e9e9 100%);
+    border-color: #d0d0d0;
+    
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-color: #d0d0d0;
+      
+      &::before {
+        display: none;
+      }
+    }
+    
+    .carrinho-icon {
+      color: #999;
+    }
+    
+    .carrinho-text {
+      color: #999;
+    }
+  }
+}
+
+.carrinho-hint {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+  font-style: italic;
+  margin-left: 2px;
+}
+
+.carrinho-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(40, 167, 69, 0.1);
+  transition: all 0.3s ease;
+  
+  .add-carrinho-btn.active & {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.carrinho-icon {
+  font-size: 1.5rem;
+  color: #28a745;
+  transition: all 0.3s ease;
+}
+
+.carrinho-text {
+  flex: 1;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  transition: color 0.3s ease;
+}
+
+.check-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.check-icon {
+  font-size: 1.2rem;
+  color: #ffffff;
+}
+
+// Animações
+@keyframes cartBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2) rotate(-10deg);
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Responsividade
+@media (max-width: 480px) {
+  .add-carrinho-btn {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+    gap: 10px;
+  }
+  
+  .carrinho-icon {
+    font-size: 1.3rem;
+  }
+  
+  .carrinho-icon-wrapper {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .carrinho-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .add-carrinho-btn {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    gap: 8px;
+  }
+  
+  .carrinho-icon {
+    font-size: 1.2rem;
+  }
+  
+  .carrinho-text {
+    font-size: 0.85rem;
+  }
+}

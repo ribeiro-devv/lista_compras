@@ -6,11 +6,11 @@
     (click)="alternarModo()"
     class="toggle-mode-btn">
     <ion-icon [name]="modoBusca ? 'create-outline' : 'search-outline'" slot="start"></ion-icon>
-    {{ modoBusca ? 'Buscar' : 'Digitar' }}
+    {{ modoBusca ? 'Digitar' : 'Buscar' }}
   </ion-button>
 </div>
 
-<div class="form-modern">
+<div class="form-modern"> 
   <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
 
     <!-- Modo Busca no Catálogo -->
@@ -169,6 +169,31 @@
       inputmode="decimal"
       (ionInput)="formatarMoeda($event)"
     ></ion-input>
+
+    <div class="add-carrinho-container">
+      <button 
+        type="button"
+        class="add-carrinho-btn"
+        [class.active]="produtoForm.get('feito')?.value"
+        [class.disabled]="!podeAdicionarAoCarrinho() && !produtoForm.get('feito')?.value"
+        (click)="toggleCarrinho()">
+        <div class="carrinho-icon-wrapper">
+          <ion-icon 
+            [name]="produtoForm.get('feito')?.value ? 'cart' : 'cart-outline'" 
+            class="carrinho-icon">
+          </ion-icon>
+        </div>
+        <span class="carrinho-text">
+          {{ produtoForm.get('feito')?.value ? 'Adicionado ao carrinho' : 'Adicionar ao carrinho' }}
+        </span>
+        <div class="check-icon-wrapper" *ngIf="produtoForm.get('feito')?.value">
+          <ion-icon name="checkmark" class="check-icon"></ion-icon>
+        </div>
+      </button>
+      <p class="carrinho-hint" *ngIf="!podeAdicionarAoCarrinho() && !produtoForm.get('feito')?.value">
+        Preencha nome, quantidade e valor para adicionar direto no carrinho
+      </p>
+    </div>
 
     <div class="modal-footer">
       <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>

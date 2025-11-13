@@ -50,11 +50,9 @@ export class TarefaService {
 
 
   async salvar(tarefa: any, callback = null) {
-    tarefa.feito = false;
     
     let collections = this.getCollection();
     
-    // Gerar próximo código baseado no último item
     if (collections.length > 0) {
       const ultimoItem = collections[collections.length - 1];
       tarefa.codigo = ultimoItem.codigo + 1;
