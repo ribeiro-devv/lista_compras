@@ -312,8 +312,8 @@ export class HomePage {
         },
         {
           text: 'Duplicar Produto',
-          icon: 'pencil',
-          cssClass: 'action-edit',
+          icon: 'copy-outline',
+          cssClass: 'action-duplicate',
           handler: () => {
             this.duplicarProduto(tarefa);
           }
