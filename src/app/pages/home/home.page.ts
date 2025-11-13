@@ -310,6 +310,14 @@ export class HomePage {
             this.mostrarDetalhes(tarefa);
           }
         },
+        {
+          text: 'Duplicar Produto',
+          icon: 'pencil',
+          cssClass: 'action-edit',
+          handler: () => {
+            this.duplicarProduto(tarefa);
+          }
+        },
 
         {
           text: '',
@@ -384,6 +392,14 @@ export class HomePage {
     });
   
     await modal.present();
+  }
+
+  async duplicarProduto(produto: any) {
+    produto.feito = false;
+    this.tarefaService.salvar(produto, () => {
+      this.listarTarefa();
+      this.utilsService.showToast(`Produto ${produto.tarefa} adicionado na lista com sucesso`, 'success');
+    });
   }
 
   private async showSimpleAlert(message: string) {
