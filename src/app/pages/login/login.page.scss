@@ -1,0 +1,165 @@
+.login-content {
+  --background: linear-gradient(135deg, #21ab76c7 0%, #21ab7683 100%);
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+  padding: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 40px;
+  color: white;
+
+  ion-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 0 8px 0;
+    color: white;
+  }
+
+  p {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0;
+  }
+}
+
+form {
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.form-item {
+  --background: #f8f9fa;
+  --border-radius: 8px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+
+  ion-label {
+    font-weight: 600;
+    color: #333;
+  }
+
+  ion-input.invalid {
+    --color: var(--ion-color-danger);
+  }
+}
+
+.error-text {
+  color: var(--ion-color-danger);
+  font-size: 12px;
+  margin: -12px 0 8px 12px;
+  display: block;
+}
+
+.forgot-password {
+  text-align: right;
+  margin: -8px 0 16px 0;
+
+  ion-button {
+    --color: var(--ion-color-primary);
+    font-size: 14px;
+  }
+}
+
+.login-button {
+  margin-top: 8px;
+  --border-radius: 8px;
+  height: 48px;
+  font-weight: 600;
+  text-transform: none;
+  background-color: #1d9668 !important;
+}
+
+.google-button {
+  --border-radius: 8px;
+  --border-color: #db4437;
+  --color: #db4437;
+  height: 48px;
+  font-weight: 600;
+  text-transform: none;
+  margin-top: 16px;
+
+  ion-icon {
+    color: #db4437;
+  }
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+  color: #999;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  span {
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 24px;
+  
+  p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  a {
+    color: var(--ion-color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Responsividade
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+
+  form {
+    padding: 20px;
+  }
+
+  .logo-section {
+    h1 {
+      font-size: 24px;
+    }
+  }
+}
+

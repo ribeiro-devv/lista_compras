@@ -1,0 +1,86 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Entrar</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="login-content">
+  <div class="login-container">
+    <div class="logo-section">
+      <ion-icon name="cart" size="large" color="primary"></ion-icon>
+      <h1>Lista de Compras</h1>
+      <p>Faça login para continuar</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Email</ion-label>
+        <ion-input
+          type="email"
+          formControlName="email"
+          placeholder="seu@email.com"
+          [class.invalid]="email?.invalid && (email?.touched || email?.dirty)">
+        </ion-input>
+      </ion-item>
+      <div class="error-text" *ngIf="email?.invalid && (email?.touched || email?.dirty)">
+        <span *ngIf="email?.errors?.['required']">Email é obrigatório</span>
+        <span *ngIf="email?.errors?.['email']">Email inválido</span>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Senha</ion-label>
+        <ion-input
+          [type]="showPassword ? 'text' : 'password'"
+          formControlName="password"
+          placeholder="Digite sua senha"
+          [class.invalid]="password?.invalid && (password?.touched || password?.dirty)">
+        </ion-input>
+        <ion-button
+          fill="clear"
+          slot="end"
+          (click)="togglePassword()"
+          type="button">
+          <ion-icon [name]="showPassword ? 'eye-off' : 'eye'"></ion-icon>
+        </ion-button>
+      </ion-item>
+      <div class="error-text" *ngIf="password?.invalid && (password?.touched || password?.dirty)">
+        <span *ngIf="password?.errors?.['required']">Senha é obrigatória</span>
+        <span *ngIf="password?.errors?.['minlength']">Senha deve ter no mínimo 6 caracteres</span>
+      </div>
+
+      <div class="forgot-password">
+        <ion-button fill="clear" size="small" (click)="resetPassword()" type="button">
+          Esqueci minha senha
+        </ion-button>
+      </div>
+
+      <ion-button
+        expand="block"
+        type="submit"
+        [disabled]="loginForm.invalid || isLoading"
+        class="login-button">
+        <ion-icon name="log-in" slot="start"></ion-icon>
+        Entrar
+      </ion-button>
+
+      <div class="divider">
+        <span>OU</span>
+      </div>
+
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="loginWithGoogle()"
+        [disabled]="isLoading"
+        class="google-button">
+        <ion-icon name="logo-google" slot="start"></ion-icon>
+        Entrar com Google
+      </ion-button>
+
+      <div class="register-link">
+        <p>Não tem uma conta? <a (click)="goToRegister()">Cadastre-se</a></p>
+      </div>
+    </form>
+  </div>
+</ion-content>
+

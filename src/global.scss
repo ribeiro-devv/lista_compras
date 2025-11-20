@@ -301,3 +301,17 @@ ion-input.is-invalid::part(native):focus {
     }
   }
 }
+
+.manage-lists-modal {
+  --width: 90%;
+  --max-width: 600px;
+  --height: 85%;
+  --max-height: 800px;
+  --border-radius: 16px;
+  --box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  
+  .modal-wrapper {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+}

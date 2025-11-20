@@ -1,0 +1,313 @@
+.modal-header-modern {
+  background-color: #28a745;
+  color: #ffffff;
+  text-align: center;
+  padding: 12px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title-modern {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+  flex: 1;
+}
+
+.close-btn {
+  --color: #ffffff;
+  margin: 0;
+}
+
+.modal-content {
+  padding: 16px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+// Lista Atual
+.current-list-section {
+  margin-bottom: 24px;
+}
+
+.current-list-card {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-radius: 12px;
+  padding: 16px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+
+  .list-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .active-icon {
+      font-size: 2rem;
+    }
+
+    h3 {
+      margin: 0 0 4px 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .list-name {
+      margin: 0 0 8px 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .list-members {
+      margin: 0;
+      font-size: 0.85rem;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+// Seções
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 24px 0 12px 0;
+
+  ion-icon {
+    font-size: 1.2rem;
+  }
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+// Convites
+.invitations-section {
+  margin-bottom: 24px;
+}
+
+.invitation-card {
+  margin-bottom: 12px;
+  border-left: 4px solid #3880ff;
+}
+
+.invitation-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  .invitation-from {
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: #333;
+  }
+
+  .invitation-owner {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  .invitation-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+}
+
+// Criar Lista
+.create-list-section {
+  margin-bottom: 24px;
+}
+
+.create-list-item {
+  --background: #f8f9fa;
+  --border-radius: 8px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+// Listas
+.lists-section {
+  margin-bottom: 24px;
+}
+
+.list-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &.current-list {
+    border: 2px solid #28a745;
+    background: #f0fff4;
+  }
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.list-details {
+  flex: 1;
+
+  h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
+
+    .owner-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #f59e0b;
+      font-weight: 500;
+    }
+
+    .members-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+.list-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Membros
+.list-members-section {
+  margin: 16px 0;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+
+  h5 {
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+  }
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+
+  .member-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+
+    .member-email {
+      flex: 1;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .you-badge {
+      font-size: 0.8rem;
+      color: #28a745;
+      font-weight: 500;
+    }
+  }
+}
+
+// Convidar
+.invite-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.invite-item {
+  --background: #ffffff;
+  --border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 0;
+}
+
+// Footer Actions
+.list-footer-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+// Empty State
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+
+  ion-icon {
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 8px 0;
+    font-size: 0.95rem;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+}
+
+// Responsividade
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 12px;
+  }
+
+  .list-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .invitation-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

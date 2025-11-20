@@ -1,0 +1,200 @@
+<div class="modal-header-modern">
+  <h2 class="modal-title-modern">Listas Compartilhadas</h2>
+  <ion-button 
+    fill="clear" 
+    size="small" 
+    (click)="dismiss()"
+    class="close-btn">
+    <ion-icon name="close" slot="icon-only"></ion-icon>
+  </ion-button>
+</div>
+
+<div class="modal-content">
+  <!-- Lista Atual -->
+  <div class="current-list-section" *ngIf="currentList">
+    <div class="current-list-card">
+      <div class="list-info">
+        <ion-icon name="checkmark-circle" color="success" class="active-icon"></ion-icon>
+        <div>
+          <h3>Lista Ativa</h3>
+          <p class="list-name">{{ currentList.name }}</p>
+          <p class="list-members">
+            <ion-icon name="people"></ion-icon>
+            {{ currentList.members?.length || 1 }} membro(s)
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Convites Pendentes -->
+  <div class="invitations-section" *ngIf="invitations.length > 0">
+    <h3 class="section-title">
+      <ion-icon name="mail"></ion-icon>
+      Convites Pendentes ({{ invitations.length }})
+    </h3>
+    
+    <ion-card *ngFor="let invitation of invitations" class="invitation-card">
+      <ion-card-content>
+        <div class="invitation-info">
+          <div>
+            <p class="invitation-from">{{ invitation.listaName }}</p>
+            <p class="invitation-owner">de {{ invitation.ownerEmail }}</p>
+          </div>
+          <div class="invitation-actions">
+            <ion-button 
+              fill="outline" 
+              size="small" 
+              color="success"
+              (click)="acceptInvitation(invitation)">
+              <ion-icon name="checkmark" slot="start"></ion-icon>
+              Aceitar
+            </ion-button>
+            <ion-button 
+              fill="clear" 
+              size="small" 
+              color="medium"
+              (click)="rejectInvitation(invitation)">
+              <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Criar Nova Lista -->
+  <div class="create-list-section">
+    <h3 class="section-title">
+      <ion-icon name="add-circle"></ion-icon>
+      Criar Nova Lista
+    </h3>
+    
+    <ion-item class="create-list-item">
+      <ion-input
+        [(ngModel)]="newListName"
+        placeholder="Nome da lista (ex: Lista da Família)"
+        (keyup.enter)="createList()">
+      </ion-input>
+      <ion-button 
+        slot="end" 
+        fill="solid" 
+        color="primary"
+        (click)="createList()"
+        [disabled]="!newListName.trim()">
+        <ion-icon name="add" slot="start"></ion-icon>
+        Criar
+      </ion-button>
+    </ion-item>
+  </div>
+
+  <!-- Lista de Listas -->
+  <div class="lists-section">
+    <h3 class="section-title">
+      <ion-icon name="list"></ion-icon>
+      Suas Listas ({{ lists.length }})
+    </h3>
+
+    <ion-card *ngFor="let list of lists" 
+              class="list-card"
+              [class.current-list]="currentList?.id === list.id">
+      <ion-card-content>
+        <div class="list-header">
+          <div class="list-details">
+            <h4>{{ list.name }}</h4>
+            <p class="list-meta">
+              <span *ngIf="isOwner(list)" class="owner-badge">
+                <ion-icon name="star"></ion-icon>
+                Você é o dono
+              </span>
+              <span class="members-count">
+                <ion-icon name="people"></ion-icon>
+                {{ list.members?.length || 1 }} membro(s)
+              </span>
+            </p>
+          </div>
+          <div class="list-actions">
+            <ion-button 
+              *ngIf="currentList?.id !== list.id"
+              fill="outline" 
+              size="small" 
+              color="primary"
+              (click)="selectList(list)">
+              <ion-icon name="checkmark" slot="start"></ion-icon>
+              Usar
+            </ion-button>
+            <ion-badge *ngIf="currentList?.id === list.id" color="success">
+              Ativa
+            </ion-badge>
+          </div>
+        </div>
+
+        <!-- Membros da Lista -->
+        <div class="list-members-section" *ngIf="list.members && list.members.length > 0">
+          <h5>Membros:</h5>
+          <div class="members-list">
+            <div *ngFor="let member of list.members" class="member-item">
+              <div class="member-info">
+                <ion-icon 
+                  [name]="member.role === 'owner' ? 'star' : 'person'" 
+                  [color]="member.role === 'owner' ? 'warning' : 'medium'">
+                </ion-icon>
+                <span class="member-email">{{ member.email }}</span>
+                <span *ngIf="member.userId === getCurrentUserId()" class="you-badge">(Você)</span>
+              </div>
+              <ion-button 
+                *ngIf="isOwner(list) && member.role !== 'owner' && member.userId !== getCurrentUserId()"
+                fill="clear" 
+                size="small" 
+                color="danger"
+                (click)="removeMember(list, member)">
+                <ion-icon name="trash" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Convidar Usuário (só owner) -->
+        <div class="invite-section" *ngIf="isOwner(list)">
+          <ion-item class="invite-item">
+            <ion-input
+              [(ngModel)]="inviteEmail"
+              placeholder="Email para convidar"
+              type="email"
+              (keyup.enter)="inviteUser()">
+            </ion-input>
+            <ion-button 
+              slot="end" 
+              fill="outline" 
+              size="small"
+              (click)="inviteUser()"
+              [disabled]="!inviteEmail.trim() || currentList?.id !== list.id">
+              <ion-icon name="person-add" slot="start"></ion-icon>
+              Convidar
+            </ion-button>
+          </ion-item>
+        </div>
+
+        <!-- Ações -->
+        <div class="list-footer-actions" *ngIf="isOwner(list)">
+          <ion-button 
+            fill="clear" 
+            size="small" 
+            color="danger"
+            (click)="deleteList(list)">
+            <ion-icon name="trash" slot="start"></ion-icon>
+            Deletar Lista
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Mensagem quando não tem listas -->
+    <div *ngIf="lists.length === 0" class="empty-state">
+      <ion-icon name="list-outline" size="large" color="medium"></ion-icon>
+      <p>Você ainda não tem listas compartilhadas</p>
+      <p class="hint">Crie uma lista acima para começar!</p>
+    </div>
+  </div>
+</div>
+

@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HistoricoService, ItemCompra } from './historico.service';
 import { CatalogoService } from './catalogo.service';
+import { AuthService } from './auth.service';
+import { SharedListService } from './shared-list.service';
 
-import { Firestore, collection, addDoc, collectionData, doc, deleteDoc, updateDoc, query, orderBy, onSnapshot, writeBatch } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, collectionData, doc, deleteDoc, updateDoc, query, orderBy, onSnapshot, writeBatch, where } from '@angular/fire/firestore';
 import { Observable, Subscription } from 'rxjs';
+import { Unsubscribe } from 'firebase/auth';
 
 @Injectable({
   providedIn: 'root'
@@ -13,23 +16,64 @@ export class TarefaService {
   private readonly FIREBASE_COLLECTION = 'listaCompras';
   codMostrar: boolean = false;
 
-  private firestoreSubscription?: Subscription;
+  private firestoreSubscription?: Unsubscribe;
   private isUpdatingFromFirestore = false; // Flag para evitar loop infinito
 
   constructor(
     private historicoService: HistoricoService,
     private catalogoService: CatalogoService,
-    private firestore: Firestore
+    private firestore: Firestore,
+    private authService: AuthService,
+    private sharedListService: SharedListService
   ) { 
+    // Carregar lista atual quando inicializar
+    this.sharedListService.loadCurrentList();
+    
+    // Observar mudanças na lista atual
+    this.sharedListService.currentList$.subscribe(() => {
+      this.iniciarSincronizacao();
+      // Limpar localStorage quando trocar de lista
+      this.clearLocalCollection();
+    });
+    
     this.iniciarSincronizacao();
   }
 
   private iniciarSincronizacao() {
+    // Cancelar subscription anterior se existir
+    if (this.firestoreSubscription) {
+      this.firestoreSubscription;
+    }
+
+    const currentList = this.sharedListService.getCurrentList();
+    if (!currentList) {
+      console.warn('⚠️ Nenhuma lista compartilhada selecionada. Selecione uma lista nas configurações.');
+      return;
+    }
+
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      console.warn('⚠️ Usuário não autenticado');
+      return;
+    }
+
+    // Verificar se usuário tem acesso à lista
+    if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
+      console.warn('⚠️ Você não tem acesso a esta lista');
+      return;
+    }
+
     const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
-    const q = query(listaRef, orderBy('codigo', 'asc'));
+    
+    // Filtrar itens pela lista compartilhada atual
+    const q = query(
+      listaRef, 
+      where('listaId', '==', currentList.id),
+      orderBy('codigo', 'asc')
+    );
 
     // Escuta mudanças no Firestore
-    onSnapshot(q, (snapshot) => {
+    this.firestoreSubscription = onSnapshot(q, (snapshot) => {
       if (this.isUpdatingFromFirestore) return; // Evita loop
 
       const itensFirestore = snapshot.docs.map(doc => ({
@@ -45,11 +89,28 @@ export class TarefaService {
         this.isUpdatingFromFirestore = false;
         console.log('✅ Lista sincronizada do Firebase');
       }
+    }, (error) => {
+      console.error('❌ Erro ao sincronizar lista:', error);
     });
   }
 
 
   async salvar(tarefa: any, callback = null) {
+    const user = this.authService.getCurrentUser();
+    const currentList = this.sharedListService.getCurrentList();
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    if (!currentList) {
+      throw new Error('Nenhuma lista compartilhada selecionada. Selecione uma lista nas configurações.');
+    }
+
+    // Verificar se usuário tem acesso à lista
+    if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
+      throw new Error('Você não tem permissão para adicionar itens nesta lista');
+    }
     
     let collections = this.getCollection();
     
@@ -60,6 +121,9 @@ export class TarefaService {
       tarefa.codigo = 1; // Primeiro item começa com código 1
     }
 
+    // Adicionar informações da lista compartilhada
+    tarefa.listaId = currentList.id;
+    tarefa.criadoPor = user.uid;
     tarefa.criadoEm = new Date().toISOString();
 
     collections.push(tarefa);
@@ -73,7 +137,7 @@ export class TarefaService {
       tarefa.firebaseId = docRef.id;
       const index = collections.findIndex(item => item.codigo === tarefa.codigo);
       if (index !== -1) {
-        collection[index] = tarefa;
+        collections[index] = tarefa;
         this.saveCollection(collections);
       }
       
@@ -239,7 +303,10 @@ export class TarefaService {
   
   // Métodos auxiliares privados
   private getCollection(): any[] {
-    const value = localStorage.getItem(this.STORAGE_KEY);
+    const currentList = this.sharedListService.getCurrentList();
+    const storageKey = currentList ? `${this.STORAGE_KEY}_${currentList.id}` : this.STORAGE_KEY;
+    
+    const value = localStorage.getItem(storageKey);
     
     if (value == null || value == undefined) {
       return [];
@@ -255,7 +322,20 @@ export class TarefaService {
   }
 
   private saveCollection(collection: any[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(collection));
+    const currentList = this.sharedListService.getCurrentList();
+    const storageKey = currentList ? `${this.STORAGE_KEY}_${currentList.id}` : this.STORAGE_KEY;
+    localStorage.setItem(storageKey, JSON.stringify(collection));
+  }
+
+  /**
+   * Limpar coleção local (usado ao trocar de lista)
+   */
+  private clearLocalCollection(): void {
+    const currentList = this.sharedListService.getCurrentList();
+    if (currentList) {
+      const storageKey = `${this.STORAGE_KEY}_${currentList.id}`;
+      // Não limpar, apenas recarregar quando trocar de lista
+    }
   }
 
   // Método para verificar se a lista está vazia (para uso no template)

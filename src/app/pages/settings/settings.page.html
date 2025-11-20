@@ -40,6 +40,58 @@
         <ion-icon name="create" slot="start"></ion-icon>
         Editar Perfil
       </ion-button>
+      
+      <!-- Botão de Logout -->
+      <ion-button 
+        *ngIf="isAuthenticated"
+        expand="block" 
+        fill="outline" 
+        color="danger" 
+        (click)="logout()"
+        style="margin-top: 12px;">
+        <ion-icon name="log-out" slot="start"></ion-icon>
+        Sair da Conta
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Lista Compartilhada Atual -->
+  <ion-card class="settings-card" *ngIf="currentList">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="list" class="settings-icon"></ion-icon>
+        Lista Compartilhada Atual
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <div class="current-list-info">
+        <h3>{{ currentList.name }}</h3>
+        <p class="list-members-info">
+          <ion-icon name="people"></ion-icon>
+          {{ currentList.members?.length || 1 }} membro(s)
+        </p>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Gerenciar Listas Compartilhadas -->
+  <ion-card class="settings-card" *ngIf="isAuthenticated">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="people" class="settings-icon"></ion-icon>
+        Listas Compartilhadas
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content>
+      <ion-button expand="block" fill="solid" color="primary" (click)="manageSharedLists()">
+        <ion-icon name="people" slot="start"></ion-icon>
+        Gerenciar Listas
+      </ion-button>
+      <p class="settings-hint">
+        Compartilhe sua lista com outras pessoas e trabalhem juntos!
+      </p>
     </ion-card-content>
   </ion-card>
 
