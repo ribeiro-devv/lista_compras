@@ -1,5 +1,6 @@
+
 import { Injectable } from '@angular/core';
-import { Firestore, collection, doc, addDoc, getDoc, setDoc, updateDoc, query, where, getDocs, onSnapshot } from '@angular/fire/firestore';
+import { Firestore, collection, doc, addDoc, getDoc, setDoc, updateDoc, query, where, getDocs, onSnapshot, arrayUnion, arrayRemove } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -19,7 +20,8 @@ export interface SharedList {
   ownerEmail: string;
   createdAt: Date;
   updatedAt: Date;
-  members: SharedListMember[];
+  members: string[]; // 🔧 FIX: Array simples de UIDs para as regras funcionarem
+  memberDetails?: SharedListMember[]; // Detalhes completos (apenas local)
   settings: {
     allowMembersEdit: boolean;
     allowMembersDelete: boolean;
@@ -33,6 +35,7 @@ export interface ListInvitation {
   ownerId: string;
   ownerEmail: string;
   invitedEmail: string;
+  invitedUserId?: string;
   status: 'pending' | 'accepted' | 'rejected';
   token: string;
   createdAt: Date;
@@ -52,7 +55,6 @@ export class SharedListService {
   ) {
     this.loadCurrentList();
     
-    // Observar mudanças na lista atual
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.loadCurrentList();
@@ -75,13 +77,7 @@ export class SharedListService {
       ownerEmail: user.email || '',
       createdAt: new Date(),
       updatedAt: new Date(),
-      members: [{
-        userId: user.uid,
-        email: user.email || '',
-        role: 'owner' as const,
-        invitedAt: new Date(),
-        joinedAt: new Date()
-      }],
+      members: [user.uid], // 🔧 FIX: Array simples de UIDs
       settings: {
         allowMembersEdit: true,
         allowMembersDelete: true
@@ -90,8 +86,18 @@ export class SharedListService {
 
     const docRef = await addDoc(collection(this.firestore, 'sharedLists'), listData);
     
-    // Definir como lista atual
-    const newList: SharedList = { id: docRef.id, ...listData } as SharedList;
+    const newList: SharedList = { 
+      id: docRef.id, 
+      ...listData,
+      memberDetails: [{
+        userId: user.uid,
+        email: user.email || '',
+        role: 'owner' as const,
+        invitedAt: new Date(),
+        joinedAt: new Date()
+      }]
+    } as SharedList;
+    
     this.setCurrentList(newList);
     
     return docRef.id;
@@ -105,19 +111,17 @@ export class SharedListService {
     if (!user) return [];
   
     try {
-      // Buscar listas onde o usuário é owner
-      const ownerQuery = query(
+      const listsQuery = query(
         collection(this.firestore, 'sharedLists'),
-        where('ownerId', '==', user.uid)
+        where('members', 'array-contains', user.uid)
       );
       
-      const ownerSnapshot = await getDocs(ownerQuery);
+      const snapshot = await getDocs(listsQuery);
       const lists: SharedList[] = [];
       
-      ownerSnapshot.forEach(doc => {
+      snapshot.forEach(doc => {
         const data = doc.data();
         
-        // Converter datas do Firestore
         const list: SharedList = {
           id: doc.id,
           name: data['name'],
@@ -125,44 +129,11 @@ export class SharedListService {
           ownerEmail: data['ownerEmail'],
           createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
           updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate() : new Date(data['updatedAt']),
-          members: data['members'] || [],
+          members: data['members'] || [data['ownerId']],
           settings: data['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
         };
         
         lists.push(list);
-      });
-  
-      // Buscar todas as listas para encontrar aquelas onde o usuário é membro
-      // (Firestore tem limitações com array-contains em campos nested)
-      const allListsQuery = query(collection(this.firestore, 'sharedLists'));
-      const allListsSnapshot = await getDocs(allListsQuery);
-      
-      allListsSnapshot.forEach(doc => {
-        // Evitar duplicatas (já adicionadas como owner)
-        if (lists.some(l => l.id === doc.id)) return;
-        
-        const data = doc.data();
-        const members = data['members'] || [];
-        
-        // Verificar se o usuário está nos membros
-        const isMember = members.some((m: any) => {
-          return m.userId === user.uid;
-        });
-        
-        if (isMember) {
-          const list: SharedList = {
-            id: doc.id,
-            name: data['name'],
-            ownerId: data['ownerId'],
-            ownerEmail: data['ownerEmail'],
-            createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
-            updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate() : new Date(data['updatedAt']),
-            members: data['members'] || [],
-            settings: data['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
-          };
-          
-          lists.push(list);
-        }
       });
   
       return lists;
@@ -179,7 +150,17 @@ export class SharedListService {
     try {
       const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
       if (listDoc.exists()) {
-        return { id: listDoc.id, ...listDoc.data() } as SharedList;
+        const data = listDoc.data();
+        return {
+          id: listDoc.id,
+          name: data['name'],
+          ownerId: data['ownerId'],
+          ownerEmail: data['ownerEmail'],
+          createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
+          updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate() : new Date(data['updatedAt']),
+          members: data['members'] || [data['ownerId']],
+          settings: data['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
+        } as SharedList;
       }
       return null;
     } catch (error) {
@@ -217,9 +198,18 @@ export class SharedListService {
     try {
       const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
       if (listDoc.exists()) {
-        const list = { id: listDoc.id, ...listDoc.data() } as SharedList;
+        const data = listDoc.data();
+        const list: SharedList = {
+          id: listDoc.id,
+          name: data['name'],
+          ownerId: data['ownerId'],
+          ownerEmail: data['ownerEmail'],
+          createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
+          updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate() : new Date(data['updatedAt']),
+          members: data['members'] || [data['ownerId']],
+          settings: data['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
+        };
         
-        // Verificar se usuário ainda tem acesso
         const user = this.authService.getCurrentUser();
         if (user && this.userHasAccess(list, user.uid)) {
           this.setCurrentList(list);
@@ -243,35 +233,41 @@ export class SharedListService {
     const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
     if (!listDoc.exists()) throw new Error('Lista não encontrada');
 
-    const list = { id: listDoc.id, ...listDoc.data() } as SharedList;
+    const data = listDoc.data();
+    const list: SharedList = {
+      id: listDoc.id,
+      name: data['name'],
+      ownerId: data['ownerId'],
+      ownerEmail: data['ownerEmail'],
+      createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
+      updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate() : new Date(data['updatedAt']),
+      members: data['members'] || [data['ownerId']],
+      settings: data['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
+    };
     
-    // Verificar se é o owner
     if (list.ownerId !== user.uid) {
       throw new Error('Apenas o dono da lista pode convidar membros');
     }
 
-    // Verificar se email já é membro
-    if (list.members && list.members.some(m => {
-      const member = typeof m === 'object' && 'email' in m ? m : { email: '' };
-      return member.email === email.toLowerCase().trim();
-    })) {
+    const emailNormalized = email.toLowerCase().trim();
+    
+    // Verificar se já é membro (por enquanto apenas verifica owner)
+    if (list.ownerEmail.toLowerCase() === emailNormalized) {
       throw new Error('Este email já é membro da lista');
     }
 
-    // Criar token único para o convite
     const token = this.generateInviteToken();
 
-    // Criar convite
     const invitation = {
       listaId: listId,
       listaName: list.name,
       ownerId: user.uid,
       ownerEmail: user.email || '',
-      invitedEmail: email.toLowerCase().trim(),
+      invitedEmail: emailNormalized,
       status: 'pending' as const,
       token,
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     };
 
     await addDoc(collection(this.firestore, 'listInvitations'), invitation);
@@ -289,29 +285,11 @@ export class SharedListService {
 
     const inviteData = inviteDoc.data();
     
-    // Converter datas do Firestore
-    let createdAt: Date;
-    let expiresAt: Date;
+    let createdAt: Date = inviteData['createdAt']?.toDate ? 
+      inviteData['createdAt'].toDate() : new Date(inviteData['createdAt']);
     
-    if (inviteData && inviteData['createdAt']) {
-      createdAt = inviteData['createdAt'].toDate 
-        ? inviteData['createdAt'].toDate() 
-        : (inviteData['createdAt'] instanceof Date 
-          ? inviteData['createdAt'] 
-          : new Date(inviteData['createdAt']));
-    } else {
-      createdAt = new Date();
-    }
-    
-    if (inviteData && inviteData['expiresAt']) {
-      expiresAt = inviteData['expiresAt'].toDate 
-        ? inviteData['expiresAt'].toDate() 
-        : (inviteData['expiresAt'] instanceof Date 
-          ? inviteData['expiresAt'] 
-          : new Date(inviteData['expiresAt']));
-    } else {
-      expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    }
+    let expiresAt: Date = inviteData['expiresAt']?.toDate ? 
+      inviteData['expiresAt'].toDate() : new Date(inviteData['expiresAt']);
     
     const invite: ListInvitation = { 
       id: inviteDoc.id, 
@@ -320,12 +298,10 @@ export class SharedListService {
       expiresAt
     } as ListInvitation;
 
-    // Verificar se o email corresponde
     if (invite.invitedEmail.toLowerCase() !== (user.email || '').toLowerCase()) {
       throw new Error('Este convite não é para você');
     }
 
-    // Verificar se não expirou
     if (new Date() > invite.expiresAt) {
       throw new Error('Convite expirado');
     }
@@ -336,69 +312,27 @@ export class SharedListService {
     if (!listDoc.exists()) throw new Error('Lista não encontrada');
 
     const listData = listDoc.data();
-    const list: SharedList = { id: listDoc.id, ...listData } as SharedList;
+    const members: string[] = listData['members'] || [listData['ownerId']];
 
-    // Converter members se necessário
-    let members: SharedListMember[] = [];
-    if (list.members && Array.isArray(list.members)) {
-      members = list.members.map((m: any) => {
-        if (typeof m === 'object' && 'userId' in m) {
-          // Converter invitedAt
-          let invitedAt: Date;
-          if (m.invitedAt) {
-            invitedAt = m.invitedAt.toDate 
-              ? m.invitedAt.toDate() 
-              : (m.invitedAt instanceof Date 
-                ? m.invitedAt 
-                : new Date(m.invitedAt));
-          } else {
-            invitedAt = new Date();
-          }
-          
-          // Converter joinedAt
-          let joinedAt: Date | undefined;
-          if (m.joinedAt) {
-            joinedAt = m.joinedAt.toDate 
-              ? m.joinedAt.toDate() 
-              : (m.joinedAt instanceof Date 
-                ? m.joinedAt 
-                : new Date(m.joinedAt));
-          }
-          
-          return {
-            ...m,
-            invitedAt,
-            joinedAt
-          } as SharedListMember;
-        }
-        return m as SharedListMember;
-      });
-    }
-
-    // Adicionar membro se não existir
-    if (!members.some(m => m.userId === user.uid)) {
-      members.push({
-        userId: user.uid,
-        email: user.email || '',
-        role: 'member',
-        invitedAt: invite.createdAt,
-        joinedAt: new Date()
-      });
-
+    if (!members.includes(user.uid)) {
+      // 🔧 FIX: Usar arrayUnion para adicionar ao array
       await updateDoc(listRef, {
-        members: members,
+        members: arrayUnion(user.uid),
         updatedAt: new Date()
       });
     }
 
     // Marcar convite como aceito
     await updateDoc(doc(this.firestore, 'listInvitations', invitationId), {
-      status: 'accepted'
+      status: 'accepted',
+      invitedUserId: user.uid
     });
 
-    // Definir como lista atual
-    const updatedList = { ...list, members };
-    this.setCurrentList(updatedList);
+    // Recarregar a lista
+    const updatedList = await this.getListById(invite.listaId);
+    if (updatedList) {
+      this.setCurrentList(updatedList);
+    }
   }
 
   /**
@@ -423,7 +357,6 @@ export class SharedListService {
         const data = doc.data();
         const expiresAt = data['expiresAt']?.toDate?.() || new Date(data['expiresAt']);
         
-        // Verificar se não expirou
         if (now <= expiresAt) {
           invitations.push({ 
             id: doc.id, 
@@ -453,28 +386,28 @@ export class SharedListService {
     if (!listDoc.exists()) throw new Error('Lista não encontrada');
 
     const listData = listDoc.data();
-    const list: SharedList = { id: listDoc.id, ...listData } as SharedList;
+    const list: SharedList = {
+      id: listDoc.id,
+      name: listData['name'],
+      ownerId: listData['ownerId'],
+      ownerEmail: listData['ownerEmail'],
+      createdAt: listData['createdAt']?.toDate ? listData['createdAt'].toDate() : new Date(listData['createdAt']),
+      updatedAt: listData['updatedAt']?.toDate ? listData['updatedAt'].toDate() : new Date(listData['updatedAt']),
+      members: listData['members'] || [listData['ownerId']],
+      settings: listData['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
+    };
 
-    // Verificar se é o owner
     if (list.ownerId !== user.uid) {
       throw new Error('Apenas o dono da lista pode remover membros');
     }
 
-    // Não pode remover o owner
     if (memberUserId === list.ownerId) {
       throw new Error('Não é possível remover o dono da lista');
     }
 
-    let members: SharedListMember[] = [];
-    if (list.members && Array.isArray(list.members)) {
-      members = list.members.filter(m => {
-        const member = typeof m === 'object' && 'userId' in m ? m : { userId: '' };
-        return member.userId !== memberUserId;
-      }) as SharedListMember[];
-    }
-
+    // 🔧 FIX: Usar arrayRemove
     await updateDoc(listRef, {
-      members: members,
+      members: arrayRemove(memberUserId),
       updatedAt: new Date()
     });
   }
@@ -489,14 +422,22 @@ export class SharedListService {
     const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
     if (!listDoc.exists()) throw new Error('Lista não encontrada');
 
-    const list: SharedList = { id: listDoc.id, ...listDoc.data() } as SharedList;
+    const data = listDoc.data();
+    const list: SharedList = {
+      id: listDoc.id,
+      name: data['name'],
+      ownerId: data['ownerId'],
+      ownerEmail: data['ownerEmail'],
+      createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
+      updatedAt: data['updatedAt']?.toDate ? data['updatedAt'].toDate() : new Date(data['updatedAt']),
+      members: data['members'] || [data['ownerId']],
+      settings: data['settings'] || { allowMembersEdit: true, allowMembersDelete: true }
+    };
 
-    // Verificar se é o owner
     if (list.ownerId !== user.uid) {
       throw new Error('Apenas o dono da lista pode deletá-la');
     }
 
-    // Se for a lista atual, remover
     if (this.currentListSubject.value?.id === listId) {
       this.setCurrentList(null);
     }
@@ -509,15 +450,7 @@ export class SharedListService {
    */
   userHasAccess(list: SharedList, userId: string): boolean {
     if (list.ownerId === userId) return true;
-    
-    if (list.members && Array.isArray(list.members)) {
-      return list.members.some(m => {
-        const member = typeof m === 'object' && 'userId' in m ? m : { userId: '' };
-        return member.userId === userId;
-      });
-    }
-    
-    return false;
+    return list.members.includes(userId);
   }
 
   /**
@@ -528,6 +461,33 @@ export class SharedListService {
   }
 
   /**
+   * Obter detalhes dos membros (buscar emails do Firestore)
+   */
+  async getMemberDetails(list: SharedList): Promise<SharedListMember[]> {
+    const memberDetails: SharedListMember[] = [];
+    
+    for (const uid of list.members) {
+      try {
+        const userDoc = await getDoc(doc(this.firestore, 'users', uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          memberDetails.push({
+            userId: uid,
+            email: userData['email'] || '',
+            role: uid === list.ownerId ? 'owner' : 'member',
+            invitedAt: list.createdAt,
+            joinedAt: list.createdAt
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar detalhes do membro:', error);
+      }
+    }
+    
+    return memberDetails;
+  }
+
+  /**
    * Gerar token único para convite
    */
   private generateInviteToken(): string {
@@ -535,4 +495,3 @@ export class SharedListService {
            Math.random().toString(36).substring(2, 15);
   }
 }
-

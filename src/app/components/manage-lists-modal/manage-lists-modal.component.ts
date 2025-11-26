@@ -16,6 +16,8 @@ export class ManageListsModalComponent implements OnInit {
   inviteEmail = '';
   isLoading = false;
 
+  memberDetailsMap: Map<string, SharedListMember[]> = new Map();
+
   constructor(
     private modalCtrl: ModalController,
     private sharedListService: SharedListService,
@@ -36,7 +38,12 @@ export class ManageListsModalComponent implements OnInit {
       this.currentList = this.sharedListService.getCurrentList();
       this.invitations = await this.sharedListService.getPendingInvitations();
       
-      // Se não tem lista atual e tem listas disponíveis, selecionar a primeira
+      // 🔧 FIX: Carregar detalhes dos membros para cada lista
+      for (const list of this.lists) {
+        const details = await this.sharedListService.getMemberDetails(list);
+        this.memberDetailsMap.set(list.id, details);
+      }
+      
       if (!this.currentList && this.lists.length > 0) {
         await this.selectList(this.lists[0]);
       }
@@ -250,6 +257,10 @@ export class ManageListsModalComponent implements OnInit {
   getCurrentUserId(): string | null {
     const user = this.authService.getCurrentUser();
     return user ? user.uid : null;
+  }
+
+  getListMembers(list: SharedList): SharedListMember[] {
+    return this.memberDetailsMap.get(list.id) || [];
   }
 
   async showToast(message: string, color: string = 'primary') {

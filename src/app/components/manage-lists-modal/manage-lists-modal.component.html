@@ -130,10 +130,10 @@
         </div>
 
         <!-- Membros da Lista -->
-        <div class="list-members-section" *ngIf="list.members && list.members.length > 0">
+        <div class="list-members-section" *ngIf="getListMembers(list).length > 0">
           <h5>Membros:</h5>
           <div class="members-list">
-            <div *ngFor="let member of list.members" class="member-item">
+            <div *ngFor="let member of getListMembers(list)" class="member-item">
               <div class="member-info">
                 <ion-icon 
                   [name]="member.role === 'owner' ? 'star' : 'person'" 
@@ -197,4 +197,3 @@
     </div>
   </div>
 </div>
-

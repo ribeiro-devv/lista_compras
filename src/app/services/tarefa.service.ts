@@ -42,7 +42,7 @@ export class TarefaService {
   private iniciarSincronizacao() {
     // Cancelar subscription anterior se existir
     if (this.firestoreSubscription) {
-      this.firestoreSubscription;
+      this.firestoreSubscription(); // Chamar a função para cancelar
     }
 
     const currentList = this.sharedListService.getCurrentList();
@@ -74,14 +74,13 @@ export class TarefaService {
 
     // Escuta mudanças no Firestore
     this.firestoreSubscription = onSnapshot(q, (snapshot) => {
-      if (this.isUpdatingFromFirestore) return; // Evita loop
+      if (this.isUpdatingFromFirestore) return;
 
       const itensFirestore = snapshot.docs.map(doc => ({
         firebaseId: doc.id,
         ...doc.data()
       }));
 
-      // Se houver diferença, atualiza localStorage
       const localCollection = this.getCollection();
       if (JSON.stringify(itensFirestore) !== JSON.stringify(localCollection)) {
         this.isUpdatingFromFirestore = true;
@@ -91,6 +90,15 @@ export class TarefaService {
       }
     }, (error) => {
       console.error('❌ Erro ao sincronizar lista:', error);
+      
+      // 🔧 FIX: Verificar se é erro de índice
+      if (error.code === 'failed-precondition') {
+        console.error('⚠️ ERRO DE ÍNDICE: Você precisa criar um índice composto no Firestore');
+        console.error('📋 Acesse o link que apareceu no console ou crie manualmente:');
+        console.error('   Collection: listaCompras');
+        console.error('   Fields: listaId (Ascending), codigo (Ascending)');
+        console.error('   Query scope: Collection');
+      }
     });
   }
 
