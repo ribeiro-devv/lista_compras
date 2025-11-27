@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActionSheetController, AlertController, ToastController } from '@ionic/angular';
 import { TarefaService } from 'src/app/services/tarefa.service';
 import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/add-produto-modal.component';
@@ -10,15 +10,19 @@ import { Router } from '@angular/router';
 import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
 import { UtilsService } from 'src/app/services/utils/utils.service';
 import { ExcluirTodosModalComponent } from 'src/app/components/excluir-todos-modal/excluir-todos-modal.component';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })
-export class HomePage {
+export class HomePage implements OnInit, OnDestroy {
 
   tarefaCollection: any[] = [];
+  
+  // 🔧 FIX: Subscription para sincronização em tempo real
+  private listaSubscription?: Subscription;
 
   constructor(
     private alertCtrl: AlertController,
@@ -26,9 +30,24 @@ export class HomePage {
     private actionSheetCtrl: ActionSheetController,
     private modalCtrl: ModalController,
     private router: Router,
-    private tourService: TourService,
+    public tourService: TourService,
     private utilsService: UtilsService 
   ) { }
+
+  ngOnInit() {
+    // 🔧 FIX: Inscrever-se para receber atualizações em tempo real
+    this.listaSubscription = this.tarefaService.lista$.subscribe(lista => {
+      console.log('🔔 HomePage recebeu atualização da lista:', lista.length, 'itens');
+      this.tarefaCollection = lista;
+    });
+  }
+
+  ngOnDestroy() {
+    // 🔧 FIX: Limpar subscription ao sair
+    if (this.listaSubscription) {
+      this.listaSubscription.unsubscribe();
+    }
+  }
 
   ionViewDidEnter() {
     this.listarTarefa();
@@ -51,7 +70,6 @@ export class HomePage {
   openHistorico() {
     this.router.navigate(['/historico']);
   }
-
 
   checkFirstAccess() {
     if (!this.tourService.isTourCompletedOnce()) {
@@ -100,14 +118,14 @@ export class HomePage {
           const loading = await this.utilsService.showCartLoading('Adicionando ao carrinho...');
           setTimeout(() => {
             this.tarefaService.salvar(dados, () => {
-              this.listarTarefa();
+              // 🔧 FIX: Não precisa mais chamar listarTarefa() - o Observable cuida disso
               this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
               if (loading) loading.dismiss();
             });
           }, 1000);
         } else {
           this.tarefaService.salvar(dados, () => {
-            this.listarTarefa();
+            // 🔧 FIX: Não precisa mais chamar listarTarefa()
             this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
           });
         }
@@ -132,7 +150,7 @@ export class HomePage {
           cssClass: 'danger',
           handler: () => {
             this.tarefaService.excluir(item, () => {
-              this.listarTarefa();
+              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Produto ${item.tarefa} removido na lista com sucesso`, 'success');
             });
           }
@@ -159,7 +177,7 @@ export class HomePage {
         }
         dadosEditados.codigo = tarefa.codigo;
         this.tarefaService.edicao(dadosEditados, () => {
-          this.listarTarefa();
+          // 🔧 FIX: Não precisa mais chamar listarTarefa()
           this.utilsService.showToast(`Produto ${dadosEditados.tarefa} editada com sucesso`, 'success');
         });
       }
@@ -186,7 +204,7 @@ export class HomePage {
           tarefa.quantidade = dados.quantidade
           setTimeout(() => {
             this.tarefaService.atualizar(tarefa, () => {
-              this.listarTarefa();
+              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
               if (loading) loading.dismiss();
             });
@@ -211,7 +229,7 @@ export class HomePage {
         
         setTimeout(() => {
           this.tarefaService.excluirTodos(() => {
-            this.listarTarefa();
+            // 🔧 FIX: Não precisa mais chamar listarTarefa()
             this.utilsService.showToast(`Todos os produtos foram excluídos com sucesso`, 'success');
             if (loading) loading.dismiss();
           });
@@ -220,29 +238,6 @@ export class HomePage {
     });
 
     await modal.present();
-
-    // const alert = await this.alertCtrl.create({
-    //   header: 'Excluir Todos os Produtos?',
-    //   message: 'Esta ação não pode ser desfeita.',
-    //   mode: 'ios',
-    //   buttons: [
-    //     {
-    //       text: 'Cancelar',
-    //       role: 'cancel',
-    //       cssClass: 'secondary'
-    //     },
-    //     {
-    //       text: 'Excluir Tudo',
-    //       cssClass: 'danger',
-    //       handler: () => {
-    //         this.tarefaService.excluirTodos(() => {
-    //           this.listarTarefa();
-    //         });
-    //       }
-    //     }
-    //   ]
-    // });
-    // await alert.present();
   }
 
   getTotalGeral(): number {
@@ -367,7 +362,7 @@ export class HomePage {
           handler: () => {
             tarefa.feito = false;
             this.tarefaService.atualizar(tarefa, () => {
-              this.listarTarefa();
+              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Produto ${tarefa.tarefa} removido do carrinho`, 'warning');
             });
           }
@@ -397,7 +392,7 @@ export class HomePage {
   async duplicarProduto(produto: any) {
     produto.feito = false;
     this.tarefaService.salvar(produto, () => {
-      this.listarTarefa();
+      // 🔧 FIX: Não precisa mais chamar listarTarefa()
       this.utilsService.showToast(`Produto ${produto.tarefa} adicionado na lista com sucesso`, 'success');
     });
   }
@@ -412,12 +407,10 @@ export class HomePage {
     await alert.present();
   }
 
-  // Método para verificar se a lista está completa
   isListaCompleta(): boolean {
     return this.tarefaService.isListaCompleta();
   }
 
-  // Método para arquivar a lista
   async arquivarLista() {
     const alert = await this.alertCtrl.create({
       header: 'Arquivar Lista',
@@ -437,7 +430,7 @@ export class HomePage {
               const listaArquivada = await this.tarefaService.arquivarListaAtual();
               
               if (loading) await loading.dismiss();
-              this.listarTarefa();
+              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
             } catch (error) {
               this.utilsService.showToast(`Erro ao arquivar a lista. Tente novamente.`, 'danger');
@@ -449,7 +442,6 @@ export class HomePage {
     await alert.present();
   }
 
-
   async showComingSoon(feature: string) {
     const alert = await this.alertCtrl.create({
       header: 'Em Breve',
@@ -459,8 +451,4 @@ export class HomePage {
     });
     await alert.present();
   }
-
 }
-
-
-

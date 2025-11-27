@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { SharedListService } from './shared-list.service';
 
 import { Firestore, collection, addDoc, collectionData, doc, deleteDoc, updateDoc, query, orderBy, onSnapshot, writeBatch, where } from '@angular/fire/firestore';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, BehaviorSubject } from 'rxjs';
 import { Unsubscribe } from 'firebase/auth';
 
 @Injectable({
@@ -17,7 +17,11 @@ export class TarefaService {
   codMostrar: boolean = false;
 
   private firestoreSubscription?: Unsubscribe;
-  private isUpdatingFromFirestore = false; // Flag para evitar loop infinito
+  private isUpdatingFromFirestore = false;
+
+  // 🔧 FIX: BehaviorSubject para notificar mudanças na lista
+  private listaAtualizada$ = new BehaviorSubject<any[]>([]);
+  public lista$ = this.listaAtualizada$.asObservable();
 
   constructor(
     private historicoService: HistoricoService,
@@ -26,13 +30,10 @@ export class TarefaService {
     private authService: AuthService,
     private sharedListService: SharedListService
   ) { 
-    // Carregar lista atual quando inicializar
     this.sharedListService.loadCurrentList();
     
-    // Observar mudanças na lista atual
     this.sharedListService.currentList$.subscribe(() => {
       this.iniciarSincronizacao();
-      // Limpar localStorage quando trocar de lista
       this.clearLocalCollection();
     });
     
@@ -40,39 +41,40 @@ export class TarefaService {
   }
 
   private iniciarSincronizacao() {
-    // Cancelar subscription anterior se existir
     if (this.firestoreSubscription) {
-      this.firestoreSubscription(); // Chamar a função para cancelar
+      this.firestoreSubscription();
     }
 
     const currentList = this.sharedListService.getCurrentList();
     if (!currentList) {
-      console.warn('⚠️ Nenhuma lista compartilhada selecionada. Selecione uma lista nas configurações.');
+      console.warn('⚠️ Nenhuma lista compartilhada selecionada');
+      // 🔧 FIX: Emitir lista vazia
+      this.listaAtualizada$.next([]);
       return;
     }
 
     const user = this.authService.getCurrentUser();
     if (!user) {
       console.warn('⚠️ Usuário não autenticado');
+      this.listaAtualizada$.next([]);
       return;
     }
 
-    // Verificar se usuário tem acesso à lista
     if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
       console.warn('⚠️ Você não tem acesso a esta lista');
+      this.listaAtualizada$.next([]);
       return;
     }
 
     const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
     
-    // Filtrar itens pela lista compartilhada atual
     const q = query(
       listaRef, 
       where('listaId', '==', currentList.id),
       orderBy('codigo', 'asc')
     );
 
-    // Escuta mudanças no Firestore
+    // 🔧 FIX: onSnapshot agora sempre notifica mudanças
     this.firestoreSubscription = onSnapshot(q, (snapshot) => {
       if (this.isUpdatingFromFirestore) return;
 
@@ -81,17 +83,17 @@ export class TarefaService {
         ...doc.data()
       }));
 
-      const localCollection = this.getCollection();
-      if (JSON.stringify(itensFirestore) !== JSON.stringify(localCollection)) {
-        this.isUpdatingFromFirestore = true;
-        this.saveCollection(itensFirestore);
-        this.isUpdatingFromFirestore = false;
-        console.log('✅ Lista sincronizada do Firebase');
-      }
+      this.isUpdatingFromFirestore = true;
+      this.saveCollection(itensFirestore);
+      
+      // 🔧 FIX: Sempre emitir a lista atualizada
+      this.listaAtualizada$.next(itensFirestore);
+      
+      this.isUpdatingFromFirestore = false;
+      console.log('✅ Lista sincronizada do Firebase:', itensFirestore.length, 'itens');
     }, (error) => {
       console.error('❌ Erro ao sincronizar lista:', error);
       
-      // 🔧 FIX: Verificar se é erro de índice
       if (error.code === 'failed-precondition') {
         console.error('⚠️ ERRO DE ÍNDICE: Você precisa criar um índice composto no Firestore');
         console.error('📋 Acesse o link que apareceu no console ou crie manualmente:');
@@ -101,7 +103,6 @@ export class TarefaService {
       }
     });
   }
-
 
   async salvar(tarefa: any, callback = null) {
     const user = this.authService.getCurrentUser();
@@ -115,7 +116,6 @@ export class TarefaService {
       throw new Error('Nenhuma lista compartilhada selecionada. Selecione uma lista nas configurações.');
     }
 
-    // Verificar se usuário tem acesso à lista
     if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
       throw new Error('Você não tem permissão para adicionar itens nesta lista');
     }
@@ -126,35 +126,36 @@ export class TarefaService {
       const ultimoItem = collections[collections.length - 1];
       tarefa.codigo = ultimoItem.codigo + 1;
     } else {
-      tarefa.codigo = 1; // Primeiro item começa com código 1
+      tarefa.codigo = 1;
     }
 
-    // Adicionar informações da lista compartilhada
     tarefa.listaId = currentList.id;
     tarefa.criadoPor = user.uid;
     tarefa.criadoEm = new Date().toISOString();
 
     collections.push(tarefa);
     this.saveCollection(collections);
+    
+    // 🔧 FIX: Emitir lista atualizada localmente (otimista)
+    this.listaAtualizada$.next([...collections]);
 
     try {
       const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
       const docRef = await addDoc(listaRef, tarefa);
       
-      // Atualiza com o ID do Firebase
       tarefa.firebaseId = docRef.id;
       const index = collections.findIndex(item => item.codigo === tarefa.codigo);
       if (index !== -1) {
         collections[index] = tarefa;
         this.saveCollection(collections);
+        // 🔧 FIX: Emitir novamente com firebaseId
+        this.listaAtualizada$.next([...collections]);
       }
       
       console.log('✅ Item salvo no Firebase:', docRef.id);
     } catch (error) {
       console.error('❌ Erro ao salvar no Firebase:', error);
-      // Continua funcionando offline
     }
-    
 
     if (callback != null) {
       callback(); 
@@ -163,10 +164,7 @@ export class TarefaService {
 
   listar() {
     const collection = this.getCollection();
-    
-    // Verificar se deve mostrar código (só para controle interno se necessário)
     this.codMostrar = collection.some(item => item.tarefa != null);
-    
     return collection;
   }
 
@@ -174,14 +172,13 @@ export class TarefaService {
     let collection = this.getCollection();
     
     const resultCollection = collection.filter(item => 
-      item.codigo !== tarefa.codigo // Melhor usar código único para filtrar
+      item.codigo !== tarefa.codigo
     );
 
     this.saveCollection(resultCollection);
-
-    if (callback != null) {
-      callback();
-    }
+    
+    // 🔧 FIX: Emitir lista atualizada
+    this.listaAtualizada$.next([...resultCollection]);
 
     if (tarefa.firebaseId) {
       try {
@@ -203,33 +200,27 @@ export class TarefaService {
     
     const itemIndex = collection.findIndex(item => item.codigo === tarefa.codigo);
     if (itemIndex !== -1) {
-      // collection[itemIndex].feito = tarefa.feito;
       collection[itemIndex] = { ...collection[itemIndex], ...tarefa };
-      // Ou se preferir atualizar propriedade por propriedade:
-      // collection[itemIndex].feito = tarefa.feito;
-      // collection[itemIndex].valorUnitario = tarefa.valorUnitario;
-      // collection[itemIndex].tarefa = tarefa.tarefa;
-      // collection[itemIndex].quantidade = tarefa.quantidade;
-
       this.saveCollection(collection);
+      
+      // 🔧 FIX: Emitir lista atualizada
+      this.listaAtualizada$.next([...collection]);
     }
 
-    // Atualizar no Firestore
-      if (tarefa.firebaseId) {
-        try {
-          const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
-          updateDoc(docRef, {
-            feito: tarefa.feito,
-            valorUnitario: tarefa.valorUnitario,
-            quantidade: tarefa.quantidade,
-            atualizadoEm: new Date().toISOString()
-          });
-          console.log('✅ Item atualizado no Firebase');
-        } catch (error) {
-          console.error('❌ Erro ao atualizar no Firebase:', error);
-        }
+    if (tarefa.firebaseId) {
+      try {
+        const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
+        updateDoc(docRef, {
+          feito: tarefa.feito,
+          valorUnitario: tarefa.valorUnitario,
+          quantidade: tarefa.quantidade,
+          atualizadoEm: new Date().toISOString()
+        });
+        console.log('✅ Item atualizado no Firebase');
+      } catch (error) {
+        console.error('❌ Erro ao atualizar no Firebase:', error);
       }
-
+    }
 
     if (callback != null) {
       callback();
@@ -254,6 +245,9 @@ export class TarefaService {
       }
       
       this.saveCollection(collection);
+      
+      // 🔧 FIX: Emitir lista atualizada
+      this.listaAtualizada$.next([...collection]);
     }
 
     if (callback != null) {
@@ -261,7 +255,6 @@ export class TarefaService {
     }
   }
 
-  // Método para calcular o total geral
   calcularTotalGeral(): number {
     const collection = this.getCollection();
     return collection.reduce((total, item) => {
@@ -271,7 +264,6 @@ export class TarefaService {
     }, 0);
   }
 
-  // Método para calcular total dos itens comprados
   calcularTotalComprado(): number {
     const collection = this.getCollection();
     return collection
@@ -283,33 +275,20 @@ export class TarefaService {
       }, 0);
   }
 
-  // Método para calcular total dos itens pendentes
-  // calcularTotalPendente(): number {
-  //   const collection = this.getCollection();
-  //   return collection
-  //     .filter(item => item.feito === false)
-  //     .reduce((total, item) => {
-  //       const quantidade = parseFloat(item.quantidade) || 0;
-  //       const valorUnitario = parseFloat(item.valorUnitario) || 0;
-  //       return total + (quantidade * valorUnitario);
-  //     }, 0);
-  // }
-
   async excluirTodos(callback = null) {
-
     const collection = this.getCollection();
     await this.excluirTodosDoFirebase(collection);
 
     this.saveCollection([]);
+    
+    // 🔧 FIX: Emitir lista vazia
+    this.listaAtualizada$.next([]);
 
     if (callback != null) {
       callback();
     }
   }
 
-  // Remove método setArray - não é mais necessário
-  
-  // Métodos auxiliares privados
   private getCollection(): any[] {
     const currentList = this.sharedListService.getCurrentList();
     const storageKey = currentList ? `${this.STORAGE_KEY}_${currentList.id}` : this.STORAGE_KEY;
@@ -335,30 +314,23 @@ export class TarefaService {
     localStorage.setItem(storageKey, JSON.stringify(collection));
   }
 
-  /**
-   * Limpar coleção local (usado ao trocar de lista)
-   */
   private clearLocalCollection(): void {
     const currentList = this.sharedListService.getCurrentList();
     if (currentList) {
       const storageKey = `${this.STORAGE_KEY}_${currentList.id}`;
-      // Não limpar, apenas recarregar quando trocar de lista
     }
   }
 
-  // Método para verificar se a lista está vazia (para uso no template)
   isListEmpty(): boolean {
     return this.getCollection().length === 0;
   }
 
-  // Método para verificar se todos os itens foram comprados
   isListaCompleta(): boolean {
     const collection = this.getCollection();
     if (collection.length === 0) return false;
     return collection.every(item => item.feito === true);
   }
 
-  // Método para arquivar a lista atual no histórico
   async arquivarListaAtual(nomeCustomizado?: string): Promise<any> {
     const collection = this.getCollection();
     const itensParaArquivar: ItemCompra[] = collection.map(item => ({
@@ -375,6 +347,9 @@ export class TarefaService {
     await this.excluirTodosDoFirebase(collection);
     
     this.saveCollection([]);
+    
+    // 🔧 FIX: Emitir lista vazia
+    this.listaAtualizada$.next([]);
     
     return listaArquivada;
   }
@@ -395,9 +370,8 @@ export class TarefaService {
       });
   
       await batch.commit();
-      console.log('✅ Todos os itens excluídos do Firebase ao arquivar');
+      console.log('✅ Todos os itens excluídos do Firebase');
       
-      // Aguarda um pouco antes de liberar a flag
       setTimeout(() => {
         this.isUpdatingFromFirestore = false;
       }, 500);
@@ -408,11 +382,8 @@ export class TarefaService {
       throw error;
     }
   }
-  
 
-  // Método auxiliar para classificar itens usando o catálogo
   private classificarItem(nomeItem: string): string {
-    // Primeiro, tenta encontrar no catálogo
     const produtosEncontrados = this.catalogoService.buscarProdutos(nomeItem);
     if (produtosEncontrados.length > 0) {
       const produto = produtosEncontrados[0];
@@ -420,7 +391,6 @@ export class TarefaService {
       return categoria?.nome || 'Outros';
     }
     
-    // Se não encontrar no catálogo, usa classificação manual
     const item = nomeItem.toLowerCase();
     
     if (/pão|leite|ovo|queijo|manteiga|iogurte|cream|nata/.test(item)) {

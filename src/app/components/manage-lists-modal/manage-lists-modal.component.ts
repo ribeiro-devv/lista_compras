@@ -15,6 +15,9 @@ export class ManageListsModalComponent implements OnInit {
   newListName = '';
   inviteEmail = '';
   isLoading = false;
+  
+  // 🔧 FIX: Flag para evitar loop ao aceitar convite
+  private acceptingInvitation = false;
 
   memberDetailsMap: Map<string, SharedListMember[]> = new Map();
 
@@ -32,13 +35,19 @@ export class ManageListsModalComponent implements OnInit {
   }
 
   async loadData() {
+    // 🔧 FIX: Não recarregar se estiver aceitando convite
+    if (this.acceptingInvitation) {
+      console.log('⏭️ Pulando loadData - aceitando convite');
+      return;
+    }
+
     this.isLoading = true;
     try {
       this.lists = await this.sharedListService.getUserLists();
       this.currentList = this.sharedListService.getCurrentList();
       this.invitations = await this.sharedListService.getPendingInvitations();
       
-      // 🔧 FIX: Carregar detalhes dos membros para cada lista
+      // Carregar detalhes dos membros para cada lista
       for (const list of this.lists) {
         const details = await this.sharedListService.getMemberDetails(list);
         this.memberDetailsMap.set(list.id, details);
@@ -91,10 +100,9 @@ export class ManageListsModalComponent implements OnInit {
       this.currentList = list;
       await this.showToast(`Lista "${list.name}" selecionada`, 'success');
       await loading.dismiss();
-      // Aguardar um pouco para dar tempo de atualizar
-      setTimeout(async () => {
-        await this.dismiss();
-      }, 500);
+      
+      // 🔧 FIX: Fechar modal imediatamente sem aguardar
+      await this.dismiss();
     } catch (error: any) {
       await loading.dismiss();
       await this.showToast(error.message || 'Erro ao selecionar lista', 'danger');
@@ -112,7 +120,6 @@ export class ManageListsModalComponent implements OnInit {
       return;
     }
 
-    // Validar formato de email básico
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.inviteEmail.trim())) {
       await this.showToast('Email inválido', 'warning');
@@ -138,6 +145,9 @@ export class ManageListsModalComponent implements OnInit {
   }
 
   async acceptInvitation(invitation: ListInvitation) {
+    // 🔧 FIX: Ativar flag para evitar loop
+    this.acceptingInvitation = true;
+
     const loading = await this.loadingController.create({
       message: 'Aceitando convite...',
       spinner: 'crescent'
@@ -146,22 +156,38 @@ export class ManageListsModalComponent implements OnInit {
 
     try {
       await this.sharedListService.acceptInvitation(invitation.id);
-      await this.showToast('Convite aceito!', 'success');
-      await this.loadData();
       
-      // Selecionar a lista automaticamente após aceitar
+      // 🔧 FIX: Remover o convite da lista local imediatamente
+      this.invitations = this.invitations.filter(inv => inv.id !== invitation.id);
+      
+      await this.showToast('Convite aceito!', 'success');
+      
+      // Recarregar listas (mas não convites)
+      this.lists = await this.sharedListService.getUserLists();
+      
+      // Buscar a lista aceita
       const list = await this.sharedListService.getListById(invitation.listaId);
+      
+      await loading.dismiss();
+      
       if (list) {
+        // Carregar detalhes dos membros da nova lista
+        const details = await this.sharedListService.getMemberDetails(list);
+        this.memberDetailsMap.set(list.id, details);
+        
+        // Selecionar a lista e fechar modal
         await this.selectList(list);
       }
     } catch (error: any) {
       await loading.dismiss();
       await this.showToast(error.message || 'Erro ao aceitar convite', 'danger');
+    } finally {
+      // 🔧 FIX: Desativar flag
+      this.acceptingInvitation = false;
     }
   }
 
   async rejectInvitation(invitation: ListInvitation) {
-    // Por enquanto, apenas não aceitar - pode implementar depois
     await this.showToast('Convite ignorado', 'medium');
   }
 
@@ -229,7 +255,6 @@ export class ManageListsModalComponent implements OnInit {
               await this.sharedListService.deleteList(list.id);
               await this.showToast('Lista deletada com sucesso', 'success');
               
-              // Se era a lista atual, remover
               if (this.currentList?.id === list.id) {
                 this.sharedListService.setCurrentList(null);
                 this.currentList = null;
@@ -277,4 +302,3 @@ export class ManageListsModalComponent implements OnInit {
     await this.modalCtrl.dismiss();
   }
 }
-
