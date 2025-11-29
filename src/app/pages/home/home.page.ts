@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
 import { UtilsService } from 'src/app/services/utils/utils.service';
 import { ExcluirTodosModalComponent } from 'src/app/components/excluir-todos-modal/excluir-todos-modal.component';
+import { SharedListService, SharedList } from 'src/app/services/shared-list.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -20,9 +21,10 @@ import { Subscription } from 'rxjs';
 export class HomePage implements OnInit, OnDestroy {
 
   tarefaCollection: any[] = [];
+  currentList: SharedList | null = null;
   
-  // 🔧 FIX: Subscription para sincronização em tempo real
   private listaSubscription?: Subscription;
+  private currentListSubscription?: Subscription;
 
   constructor(
     private alertCtrl: AlertController,
@@ -31,21 +33,28 @@ export class HomePage implements OnInit, OnDestroy {
     private modalCtrl: ModalController,
     private router: Router,
     public tourService: TourService,
-    private utilsService: UtilsService 
+    private utilsService: UtilsService,
+    private sharedListService: SharedListService
   ) { }
 
   ngOnInit() {
-    // 🔧 FIX: Inscrever-se para receber atualizações em tempo real
     this.listaSubscription = this.tarefaService.lista$.subscribe(lista => {
       console.log('🔔 HomePage recebeu atualização da lista:', lista.length, 'itens');
       this.tarefaCollection = lista;
     });
+
+    // 🔧 FIX: Observar mudanças na lista atual
+    this.currentListSubscription = this.sharedListService.currentList$.subscribe(list => {
+      this.currentList = list;
+    });
   }
 
   ngOnDestroy() {
-    // 🔧 FIX: Limpar subscription ao sair
     if (this.listaSubscription) {
       this.listaSubscription.unsubscribe();
+    }
+    if (this.currentListSubscription) {
+      this.currentListSubscription.unsubscribe();
     }
   }
 
@@ -87,6 +96,48 @@ export class HomePage implements OnInit, OnDestroy {
     return item.codigo ? item.codigo : index;
   }
 
+  // 🔧 FIX: Métodos para gerenciar listas
+  getNomeLista(): string {
+    return this.currentList?.name || 'Minha Lista';
+  }
+
+  isListaPersonal(): boolean {
+    return this.sharedListService.isPersonalList(this.currentList);
+  }
+
+  async abrirSeletorLista() {
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: 'Selecionar Lista',
+      mode: 'ios',
+      buttons: [
+        {
+          text: '📱 Minha Lista (Offline)',
+          icon: 'person',
+          handler: async () => {
+            const listaPersonal = this.sharedListService.getPersonalList();
+            this.sharedListService.setCurrentList(listaPersonal);
+            await this.utilsService.showToast('Lista pessoal selecionada', 'success');
+          }
+        },
+        {
+          text: '☁️ Gerenciar Listas Compartilhadas',
+          icon: 'cloud',
+          handler: () => {
+            this.router.navigate(['/settings']);
+            // Pode abrir direto o modal se preferir
+          }
+        },
+        {
+          text: 'Cancelar',
+          icon: 'close',
+          role: 'cancel'
+        }
+      ]
+    });
+
+    await actionSheet.present();
+  }
+
   async showAdd() {
     const modal = await this.modalCtrl.create({
       component: AddProdutoModalComponent,
@@ -118,14 +169,12 @@ export class HomePage implements OnInit, OnDestroy {
           const loading = await this.utilsService.showCartLoading('Adicionando ao carrinho...');
           setTimeout(() => {
             this.tarefaService.salvar(dados, () => {
-              // 🔧 FIX: Não precisa mais chamar listarTarefa() - o Observable cuida disso
               this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
               if (loading) loading.dismiss();
             });
           }, 1000);
         } else {
           this.tarefaService.salvar(dados, () => {
-            // 🔧 FIX: Não precisa mais chamar listarTarefa()
             this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
           });
         }
@@ -150,7 +199,6 @@ export class HomePage implements OnInit, OnDestroy {
           cssClass: 'danger',
           handler: () => {
             this.tarefaService.excluir(item, () => {
-              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Produto ${item.tarefa} removido na lista com sucesso`, 'success');
             });
           }
@@ -177,7 +225,6 @@ export class HomePage implements OnInit, OnDestroy {
         }
         dadosEditados.codigo = tarefa.codigo;
         this.tarefaService.edicao(dadosEditados, () => {
-          // 🔧 FIX: Não precisa mais chamar listarTarefa()
           this.utilsService.showToast(`Produto ${dadosEditados.tarefa} editada com sucesso`, 'success');
         });
       }
@@ -204,7 +251,6 @@ export class HomePage implements OnInit, OnDestroy {
           tarefa.quantidade = dados.quantidade
           setTimeout(() => {
             this.tarefaService.atualizar(tarefa, () => {
-              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Produto ${tarefa.tarefa} adicionado ao carrinho!`, 'success');
               if (loading) loading.dismiss();
             });
@@ -229,7 +275,6 @@ export class HomePage implements OnInit, OnDestroy {
         
         setTimeout(() => {
           this.tarefaService.excluirTodos(() => {
-            // 🔧 FIX: Não precisa mais chamar listarTarefa()
             this.utilsService.showToast(`Todos os produtos foram excluídos com sucesso`, 'success');
             if (loading) loading.dismiss();
           });
@@ -362,7 +407,6 @@ export class HomePage implements OnInit, OnDestroy {
           handler: () => {
             tarefa.feito = false;
             this.tarefaService.atualizar(tarefa, () => {
-              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Produto ${tarefa.tarefa} removido do carrinho`, 'warning');
             });
           }
@@ -392,7 +436,6 @@ export class HomePage implements OnInit, OnDestroy {
   async duplicarProduto(produto: any) {
     produto.feito = false;
     this.tarefaService.salvar(produto, () => {
-      // 🔧 FIX: Não precisa mais chamar listarTarefa()
       this.utilsService.showToast(`Produto ${produto.tarefa} adicionado na lista com sucesso`, 'success');
     });
   }
@@ -430,7 +473,6 @@ export class HomePage implements OnInit, OnDestroy {
               const listaArquivada = await this.tarefaService.arquivarListaAtual();
               
               if (loading) await loading.dismiss();
-              // 🔧 FIX: Não precisa mais chamar listarTarefa()
               this.utilsService.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
             } catch (error) {
               this.utilsService.showToast(`Erro ao arquivar a lista. Tente novamente.`, 'danger');

@@ -19,7 +19,6 @@ export class TarefaService {
   private firestoreSubscription?: Unsubscribe;
   private isUpdatingFromFirestore = false;
 
-  // 🔧 FIX: BehaviorSubject para notificar mudanças na lista
   private listaAtualizada$ = new BehaviorSubject<any[]>([]);
   public lista$ = this.listaAtualizada$.asObservable();
 
@@ -35,6 +34,10 @@ export class TarefaService {
     this.sharedListService.currentList$.subscribe(() => {
       this.iniciarSincronizacao();
       this.clearLocalCollection();
+      
+      // 🔧 FIX: Emitir lista atual ao trocar
+      const lista = this.getCollection();
+      this.listaAtualizada$.next(lista);
     });
     
     this.iniciarSincronizacao();
@@ -47,12 +50,20 @@ export class TarefaService {
 
     const currentList = this.sharedListService.getCurrentList();
     if (!currentList) {
-      console.warn('⚠️ Nenhuma lista compartilhada selecionada');
-      // 🔧 FIX: Emitir lista vazia
+      console.warn('⚠️ Nenhuma lista selecionada');
       this.listaAtualizada$.next([]);
       return;
     }
 
+    // 🔧 FIX: Se for lista pessoal, não sincronizar com Firebase
+    if (this.sharedListService.isPersonalList(currentList)) {
+      console.log('✅ Lista pessoal - modo offline');
+      const lista = this.getCollection();
+      this.listaAtualizada$.next(lista);
+      return;
+    }
+
+    // Lista compartilhada - sincronizar com Firebase
     const user = this.authService.getCurrentUser();
     if (!user) {
       console.warn('⚠️ Usuário não autenticado');
@@ -74,7 +85,6 @@ export class TarefaService {
       orderBy('codigo', 'asc')
     );
 
-    // 🔧 FIX: onSnapshot agora sempre notifica mudanças
     this.firestoreSubscription = onSnapshot(q, (snapshot) => {
       if (this.isUpdatingFromFirestore) return;
 
@@ -85,39 +95,26 @@ export class TarefaService {
 
       this.isUpdatingFromFirestore = true;
       this.saveCollection(itensFirestore);
-      
-      // 🔧 FIX: Sempre emitir a lista atualizada
       this.listaAtualizada$.next(itensFirestore);
-      
       this.isUpdatingFromFirestore = false;
-      console.log('✅ Lista sincronizada do Firebase:', itensFirestore.length, 'itens');
+      
+      console.log('✅ Lista compartilhada sincronizada:', itensFirestore.length, 'itens');
     }, (error) => {
       console.error('❌ Erro ao sincronizar lista:', error);
       
       if (error.code === 'failed-precondition') {
-        console.error('⚠️ ERRO DE ÍNDICE: Você precisa criar um índice composto no Firestore');
-        console.error('📋 Acesse o link que apareceu no console ou crie manualmente:');
+        console.error('⚠️ ERRO DE ÍNDICE: Crie um índice composto no Firestore');
         console.error('   Collection: listaCompras');
         console.error('   Fields: listaId (Ascending), codigo (Ascending)');
-        console.error('   Query scope: Collection');
       }
     });
   }
 
   async salvar(tarefa: any, callback = null) {
-    const user = this.authService.getCurrentUser();
     const currentList = this.sharedListService.getCurrentList();
     
-    if (!user) {
-      throw new Error('Usuário não autenticado');
-    }
-
     if (!currentList) {
-      throw new Error('Nenhuma lista compartilhada selecionada. Selecione uma lista nas configurações.');
-    }
-
-    if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
-      throw new Error('Você não tem permissão para adicionar itens nesta lista');
+      throw new Error('Nenhuma lista selecionada');
     }
     
     let collections = this.getCollection();
@@ -130,31 +127,44 @@ export class TarefaService {
     }
 
     tarefa.listaId = currentList.id;
-    tarefa.criadoPor = user.uid;
+    
+    // 🔧 FIX: Adicionar dados do usuário apenas se estiver autenticado
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      tarefa.criadoPor = user.uid;
+    }
     tarefa.criadoEm = new Date().toISOString();
 
     collections.push(tarefa);
     this.saveCollection(collections);
-    
-    // 🔧 FIX: Emitir lista atualizada localmente (otimista)
     this.listaAtualizada$.next([...collections]);
 
-    try {
-      const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
-      const docRef = await addDoc(listaRef, tarefa);
-      
-      tarefa.firebaseId = docRef.id;
-      const index = collections.findIndex(item => item.codigo === tarefa.codigo);
-      if (index !== -1) {
-        collections[index] = tarefa;
-        this.saveCollection(collections);
-        // 🔧 FIX: Emitir novamente com firebaseId
-        this.listaAtualizada$.next([...collections]);
+    // 🔧 FIX: Sincronizar com Firebase apenas se for lista compartilhada
+    if (!this.sharedListService.isPersonalList(currentList)) {
+      if (!user) {
+        console.warn('⚠️ Usuário não autenticado - item não será sincronizado');
+      } else if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
+        throw new Error('Você não tem permissão para adicionar itens nesta lista');
+      } else {
+        try {
+          const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
+          const docRef = await addDoc(listaRef, tarefa);
+          
+          tarefa.firebaseId = docRef.id;
+          const index = collections.findIndex(item => item.codigo === tarefa.codigo);
+          if (index !== -1) {
+            collections[index] = tarefa;
+            this.saveCollection(collections);
+            this.listaAtualizada$.next([...collections]);
+          }
+          
+          console.log('✅ Item salvo no Firebase:', docRef.id);
+        } catch (error) {
+          console.error('❌ Erro ao salvar no Firebase:', error);
+        }
       }
-      
-      console.log('✅ Item salvo no Firebase:', docRef.id);
-    } catch (error) {
-      console.error('❌ Erro ao salvar no Firebase:', error);
+    } else {
+      console.log('✅ Item salvo localmente (lista pessoal)');
     }
 
     if (callback != null) {
@@ -176,11 +186,11 @@ export class TarefaService {
     );
 
     this.saveCollection(resultCollection);
-    
-    // 🔧 FIX: Emitir lista atualizada
     this.listaAtualizada$.next([...resultCollection]);
 
-    if (tarefa.firebaseId) {
+    // 🔧 FIX: Excluir do Firebase apenas se for lista compartilhada
+    const currentList = this.sharedListService.getCurrentList();
+    if (currentList && !this.sharedListService.isPersonalList(currentList) && tarefa.firebaseId) {
       try {
         const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
         deleteDoc(docRef);
@@ -202,12 +212,12 @@ export class TarefaService {
     if (itemIndex !== -1) {
       collection[itemIndex] = { ...collection[itemIndex], ...tarefa };
       this.saveCollection(collection);
-      
-      // 🔧 FIX: Emitir lista atualizada
       this.listaAtualizada$.next([...collection]);
     }
 
-    if (tarefa.firebaseId) {
+    // 🔧 FIX: Atualizar no Firebase apenas se for lista compartilhada
+    const currentList = this.sharedListService.getCurrentList();
+    if (currentList && !this.sharedListService.isPersonalList(currentList) && tarefa.firebaseId) {
       try {
         const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
         updateDoc(docRef, {
@@ -245,8 +255,6 @@ export class TarefaService {
       }
       
       this.saveCollection(collection);
-      
-      // 🔧 FIX: Emitir lista atualizada
       this.listaAtualizada$.next([...collection]);
     }
 
@@ -277,11 +285,14 @@ export class TarefaService {
 
   async excluirTodos(callback = null) {
     const collection = this.getCollection();
-    await this.excluirTodosDoFirebase(collection);
+    
+    // 🔧 FIX: Excluir do Firebase apenas se for lista compartilhada
+    const currentList = this.sharedListService.getCurrentList();
+    if (currentList && !this.sharedListService.isPersonalList(currentList)) {
+      await this.excluirTodosDoFirebase(collection);
+    }
 
     this.saveCollection([]);
-    
-    // 🔧 FIX: Emitir lista vazia
     this.listaAtualizada$.next([]);
 
     if (callback != null) {
@@ -344,11 +355,13 @@ export class TarefaService {
 
     const listaArquivada = this.historicoService.arquivarListaAtual(itensParaArquivar, nomeCustomizado);
     
-    await this.excluirTodosDoFirebase(collection);
+    // 🔧 FIX: Excluir do Firebase apenas se for lista compartilhada
+    const currentList = this.sharedListService.getCurrentList();
+    if (currentList && !this.sharedListService.isPersonalList(currentList)) {
+      await this.excluirTodosDoFirebase(collection);
+    }
     
     this.saveCollection([]);
-    
-    // 🔧 FIX: Emitir lista vazia
     this.listaAtualizada$.next([]);
     
     return listaArquivada;

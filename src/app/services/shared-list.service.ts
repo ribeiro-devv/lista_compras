@@ -25,6 +25,8 @@ export interface SharedList {
     allowMembersEdit: boolean;
     allowMembersDelete: boolean;
   };
+  // 🔧 FIX: Identificador de lista pessoal
+  isPersonal?: boolean;
 }
 
 export interface ListInvitation {
@@ -48,6 +50,9 @@ export class SharedListService {
   private currentListSubject = new BehaviorSubject<SharedList | null>(null);
   public currentList$ = this.currentListSubject.asObservable();
 
+  // 🔧 FIX: ID especial para lista pessoal
+  private readonly PERSONAL_LIST_ID = 'personal_list';
+
   constructor(
     private firestore: Firestore,
     private authService: AuthService
@@ -61,6 +66,37 @@ export class SharedListService {
         this.setCurrentList(null);
       }
     });
+  }
+
+  /**
+   * 🔧 FIX: Obter ou criar lista pessoal padrão
+   */
+  getPersonalList(): SharedList {
+    const user = this.authService.getCurrentUser();
+    const userId = user?.uid || 'local_user';
+    const userEmail = user?.email || 'offline@local.com';
+
+    return {
+      id: this.PERSONAL_LIST_ID,
+      name: 'Minha Lista',
+      ownerId: userId,
+      ownerEmail: userEmail,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      members: [userId],
+      isPersonal: true,
+      settings: {
+        allowMembersEdit: true,
+        allowMembersDelete: true
+      }
+    };
+  }
+
+  /**
+   * 🔧 FIX: Verificar se é lista pessoal
+   */
+  isPersonalList(list: SharedList | null): boolean {
+    return list?.id === this.PERSONAL_LIST_ID || list?.isPersonal === true;
   }
 
   async createSharedList(name: string): Promise<string> {
@@ -150,6 +186,11 @@ export class SharedListService {
   async getListById(listId: string): Promise<SharedList | null> {
     console.log('🔵 Buscando lista por ID:', listId);
     
+    // 🔧 FIX: Se for lista pessoal, retornar objeto local
+    if (listId === this.PERSONAL_LIST_ID) {
+      return this.getPersonalList();
+    }
+    
     try {
       const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
       if (listDoc.exists()) {
@@ -191,14 +232,25 @@ export class SharedListService {
     return this.currentListSubject.value;
   }
 
+  /**
+   * 🔧 FIX: Carregar lista atual - se não tiver, usar lista pessoal
+   */
   async loadCurrentList(): Promise<void> {
     const listId = localStorage.getItem('currentSharedListId');
+    
+    // 🔧 FIX: Se não tem lista salva, usar lista pessoal
     if (!listId) {
-      console.log('⚠️ Nenhuma lista salva no localStorage');
+      console.log('✅ Usando lista pessoal padrão');
+      this.setCurrentList(this.getPersonalList());
       return;
     }
 
-    console.log('🔵 Carregando lista atual do localStorage:', listId);
+    // 🔧 FIX: Se for lista pessoal
+    if (listId === this.PERSONAL_LIST_ID) {
+      console.log('✅ Carregando lista pessoal');
+      this.setCurrentList(this.getPersonalList());
+      return;
+    }
 
     try {
       const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
@@ -220,19 +272,27 @@ export class SharedListService {
           this.setCurrentList(list);
           console.log('✅ Lista carregada com sucesso');
         } else {
-          console.warn('⚠️ Usuário sem acesso à lista');
-          localStorage.removeItem('currentSharedListId');
+          console.warn('⚠️ Usuário sem acesso, voltando para lista pessoal');
+          this.setCurrentList(this.getPersonalList());
         }
+      } else {
+        console.warn('⚠️ Lista não encontrada, voltando para lista pessoal');
+        this.setCurrentList(this.getPersonalList());
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar lista atual:', error);
-      localStorage.removeItem('currentSharedListId');
+      console.error('❌ Erro ao carregar lista, usando lista pessoal:', error);
+      this.setCurrentList(this.getPersonalList());
     }
   }
 
   async inviteUserByEmail(listId: string, email: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
+
+    // 🔧 FIX: Não pode convidar para lista pessoal
+    if (listId === this.PERSONAL_LIST_ID) {
+      throw new Error('Não é possível convidar pessoas para sua lista pessoal. Crie uma lista compartilhada primeiro.');
+    }
 
     console.log('🔵 Convidando usuário:', email, 'para lista:', listId);
 
@@ -289,17 +349,12 @@ export class SharedListService {
     if (!user) throw new Error('Usuário não autenticado');
 
     console.log('🔵 Aceitando convite:', invitationId);
-    console.log('🔵 Usuário atual:', { uid: user.uid, email: user.email });
 
     try {
       const inviteDoc = await getDoc(doc(this.firestore, 'listInvitations', invitationId));
-      if (!inviteDoc.exists()) {
-        console.error('❌ Convite não encontrado');
-        throw new Error('Convite não encontrado');
-      }
+      if (!inviteDoc.exists()) throw new Error('Convite não encontrado');
 
       const inviteData = inviteDoc.data();
-      console.log('🔵 Dados do convite:', inviteData);
       
       let createdAt: Date = inviteData['createdAt']?.toDate ? 
         inviteData['createdAt'].toDate() : new Date(inviteData['createdAt']);
@@ -315,75 +370,40 @@ export class SharedListService {
       } as ListInvitation;
 
       if (invite.invitedEmail.toLowerCase() !== (user.email || '').toLowerCase()) {
-        console.error('❌ Email não corresponde:', {
-          inviteEmail: invite.invitedEmail,
-          userEmail: user.email
-        });
         throw new Error('Este convite não é para você');
       }
 
       if (new Date() > invite.expiresAt) {
-        console.error('❌ Convite expirado');
         throw new Error('Convite expirado');
       }
 
-      // Buscar a lista
-      console.log('🔵 Buscando lista:', invite.listaId);
       const listRef = doc(this.firestore, 'sharedLists', invite.listaId);
       const listDoc = await getDoc(listRef);
       
-      if (!listDoc.exists()) {
-        console.error('❌ Lista não encontrada');
-        throw new Error('Lista não encontrada');
-      }
+      if (!listDoc.exists()) throw new Error('Lista não encontrada');
 
       const listData = listDoc.data();
       const members: string[] = listData['members'] || [listData['ownerId']];
-      
-      console.log('🔵 Membros atuais da lista:', members);
-      console.log('🔵 Verificando se usuário já é membro:', members.includes(user.uid));
 
       if (!members.includes(user.uid)) {
-        console.log('🔵 Adicionando usuário aos membros...');
-        
-        try {
-          await updateDoc(listRef, {
-            members: arrayUnion(user.uid),
-            updatedAt: new Date()
-          });
-          console.log('✅ Usuário adicionado aos membros com sucesso');
-        } catch (updateError: any) {
-          console.error('❌ Erro ao atualizar lista:', updateError);
-          console.error('❌ Código do erro:', updateError.code);
-          console.error('❌ Mensagem:', updateError.message);
-          throw new Error(`Erro ao aceitar convite: ${updateError.message}`);
-        }
-      } else {
-        console.log('⚠️ Usuário já é membro da lista');
-      }
-
-      // Marcar convite como aceito
-      console.log('🔵 Marcando convite como aceito...');
-      try {
-        await updateDoc(doc(this.firestore, 'listInvitations', invitationId), {
-          status: 'accepted',
-          invitedUserId: user.uid
+        await updateDoc(listRef, {
+          members: arrayUnion(user.uid),
+          updatedAt: new Date()
         });
-        console.log('✅ Convite marcado como aceito');
-      } catch (inviteUpdateError) {
-        console.error('❌ Erro ao atualizar convite:', inviteUpdateError);
-        // Não bloquear se falhar - o importante é ter adicionado à lista
+        console.log('✅ Usuário adicionado aos membros');
       }
 
-      // Recarregar a lista
-      console.log('🔵 Recarregando lista...');
+      await updateDoc(doc(this.firestore, 'listInvitations', invitationId), {
+        status: 'accepted',
+        invitedUserId: user.uid
+      });
+
       const updatedList = await this.getListById(invite.listaId);
       if (updatedList) {
         this.setCurrentList(updatedList);
-        console.log('✅ Convite aceito com sucesso!');
       }
     } catch (error: any) {
-      console.error('❌ ERRO COMPLETO ao aceitar convite:', error);
+      console.error('❌ Erro ao aceitar convite:', error);
       throw error;
     }
   }
@@ -391,8 +411,6 @@ export class SharedListService {
   async getPendingInvitations(): Promise<ListInvitation[]> {
     const user = this.authService.getCurrentUser();
     if (!user || !user.email) return [];
-
-    console.log('🔵 Buscando convites pendentes para:', user.email);
 
     try {
       const q = query(
@@ -419,7 +437,6 @@ export class SharedListService {
         }
       });
 
-      console.log(`✅ Encontrados ${invitations.length} convites pendentes`);
       return invitations;
     } catch (error) {
       console.error('❌ Erro ao buscar convites:', error);
@@ -431,7 +448,10 @@ export class SharedListService {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    console.log('🔵 Removendo membro:', memberUserId, 'da lista:', listId);
+    // 🔧 FIX: Não pode remover de lista pessoal
+    if (listId === this.PERSONAL_LIST_ID) {
+      throw new Error('Não é possível remover membros da lista pessoal');
+    }
 
     const listRef = doc(this.firestore, 'sharedLists', listId);
     const listDoc = await getDoc(listRef);
@@ -462,7 +482,7 @@ export class SharedListService {
         members: arrayRemove(memberUserId),
         updatedAt: new Date()
       });
-      console.log('✅ Membro removido com sucesso');
+      console.log('✅ Membro removido');
     } catch (error) {
       console.error('❌ Erro ao remover membro:', error);
       throw error;
@@ -473,7 +493,10 @@ export class SharedListService {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    console.log('🔵 Deletando lista:', listId);
+    // 🔧 FIX: Não pode deletar lista pessoal
+    if (listId === this.PERSONAL_LIST_ID) {
+      throw new Error('Não é possível deletar sua lista pessoal');
+    }
 
     const listDoc = await getDoc(doc(this.firestore, 'sharedLists', listId));
     if (!listDoc.exists()) throw new Error('Lista não encontrada');
@@ -495,12 +518,12 @@ export class SharedListService {
     }
 
     if (this.currentListSubject.value?.id === listId) {
-      this.setCurrentList(null);
+      this.setCurrentList(this.getPersonalList());
     }
 
     try {
       await setDoc(doc(this.firestore, 'sharedLists', listId), {}, { merge: false });
-      console.log('✅ Lista deletada com sucesso');
+      console.log('✅ Lista deletada');
     } catch (error) {
       console.error('❌ Erro ao deletar lista:', error);
       throw error;
@@ -508,6 +531,9 @@ export class SharedListService {
   }
 
   userHasAccess(list: SharedList, userId: string): boolean {
+    // 🔧 FIX: Lista pessoal sempre tem acesso
+    if (list.id === this.PERSONAL_LIST_ID || list.isPersonal) return true;
+    
     if (list.ownerId === userId) return true;
     return list.members.includes(userId);
   }
@@ -517,7 +543,11 @@ export class SharedListService {
   }
 
   async getMemberDetails(list: SharedList): Promise<SharedListMember[]> {
-    console.log('🔵 Buscando detalhes dos membros da lista:', list.name);
+    // 🔧 FIX: Lista pessoal não tem membros para mostrar
+    if (list.id === this.PERSONAL_LIST_ID || list.isPersonal) {
+      return [];
+    }
+    
     const memberDetails: SharedListMember[] = [];
     
     for (const uid of list.members) {
@@ -534,11 +564,10 @@ export class SharedListService {
           });
         }
       } catch (error) {
-        console.error('❌ Erro ao buscar detalhes do membro:', uid, error);
+        console.error('❌ Erro ao buscar membro:', error);
       }
     }
     
-    console.log(`✅ Encontrados detalhes de ${memberDetails.length} membros`);
     return memberDetails;
   }
 

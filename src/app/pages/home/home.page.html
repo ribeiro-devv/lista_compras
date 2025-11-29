@@ -1,16 +1,35 @@
 <ion-header [translucent]="true">
+  <!-- Toolbar Principal -->
   <ion-toolbar color="primary">
     <ion-title class="animate__animated animate__backInDown">
       Lista de Compras
     </ion-title>
     <ion-buttons slot="end">
-      <!-- <ion-button (click)="openHistorico()">
-        <ion-icon name="analytics-outline"></ion-icon>
-      </ion-button> -->
       <ion-button (click)="openSettings()">
         <ion-icon name="settings"></ion-icon>
       </ion-button>
     </ion-buttons>
+  </ion-toolbar>
+  
+  <!-- 🔧 NOVA TOOLBAR: Seletor de Lista -->
+  <ion-toolbar color="light">
+    <ion-chip slot="start" (click)="abrirSeletorLista()" class="lista-chip">
+      <ion-icon 
+        [name]="isListaPersonal() ? 'person' : 'people'" 
+        [color]="isListaPersonal() ? 'medium' : 'primary'">
+      </ion-icon>
+      <ion-label>
+        <strong>{{ getNomeLista() }}</strong>
+      </ion-label>
+      <ion-icon name="chevron-down"></ion-icon>
+    </ion-chip>
+    
+    <ion-badge 
+      slot="end" 
+      [color]="isListaPersonal() ? 'medium' : 'success'"
+      class="tipo-lista-badge">
+      {{ isListaPersonal() ? '📱 Offline' : '☁️ Sincronizado' }}
+    </ion-badge>
   </ion-toolbar>
 </ion-header>
 
@@ -192,7 +211,6 @@
   <!-- Floating Action Buttons -->
   
   <!-- Botão Tour (ao lado do Excluir Todos) -->
-   
   <ion-fab *ngIf="!tourService.isTourCompletedOnce()" vertical="bottom" horizontal="start" slot="fixed" style="left: 3%; margin-bottom: 10px;">
     <ion-fab-button (click)="restartTour()" color="tertiary" class="animate__animated animate__bounce" size="small">
       <ion-icon name="help-circle-outline"></ion-icon>
