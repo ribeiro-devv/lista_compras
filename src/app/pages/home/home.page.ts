@@ -10,7 +10,10 @@ import { Router } from '@angular/router';
 import { DetalhesProdutoModalComponent } from 'src/app/components/detalhes-produto-modal/detalhes-produto-modal.component';
 import { UtilsService } from 'src/app/services/utils/utils.service';
 import { ExcluirTodosModalComponent } from 'src/app/components/excluir-todos-modal/excluir-todos-modal.component';
+import { FavoritosModalComponent } from 'src/app/components/favoritos-modal/favoritos-modal.component';
+import { ManageListsModalComponent } from 'src/app/components/manage-lists-modal/manage-lists-modal.component';
 import { SharedListService, SharedList } from 'src/app/services/shared-list.service';
+import { CatalogoService, ProdutoCatalogo } from 'src/app/services/catalogo.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -22,7 +25,12 @@ export class HomePage implements OnInit, OnDestroy {
 
   tarefaCollection: any[] = [];
   currentList: SharedList | null = null;
-  
+
+  // Adição rápida com autocomplete
+  novoItem = '';
+  sugestoes: ProdutoCatalogo[] = [];
+  mostrarSugestoes = false;
+
   private listaSubscription?: Subscription;
   private currentListSubscription?: Subscription;
 
@@ -34,7 +42,8 @@ export class HomePage implements OnInit, OnDestroy {
     private router: Router,
     public tourService: TourService,
     private utilsService: UtilsService,
-    private sharedListService: SharedListService
+    private sharedListService: SharedListService,
+    private catalogoService: CatalogoService
   ) { }
 
   ngOnInit() {
@@ -61,15 +70,6 @@ export class HomePage implements OnInit, OnDestroy {
   ionViewDidEnter() {
     this.listarTarefa();
     this.checkFirstAccess();
-    this.loadThemeSettings();
-  }
-
-  loadThemeSettings() {
-    const savedSettings = localStorage.getItem('appSettings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      document.body.classList.toggle('dark', settings.darkMode);
-    }
   }
 
   openSettings() {
@@ -78,6 +78,28 @@ export class HomePage implements OnInit, OnDestroy {
 
   openHistorico() {
     this.router.navigate(['/historico']);
+  }
+
+  openEstatisticas() {
+    // A tela de Histórico já é o dashboard de estatísticas.
+    this.router.navigate(['/historico']);
+  }
+
+  async openFavoritos() {
+    const modal = await this.modalCtrl.create({
+      component: FavoritosModalComponent,
+      cssClass: 'manage-lists-modal'
+    });
+    await modal.present();
+  }
+
+  async openCompartilhar() {
+    const modal = await this.modalCtrl.create({
+      component: ManageListsModalComponent,
+      cssClass: 'manage-lists-modal',
+      backdropDismiss: true
+    });
+    await modal.present();
   }
 
   checkFirstAccess() {
@@ -96,6 +118,88 @@ export class HomePage implements OnInit, OnDestroy {
     return item.codigo ? item.codigo : index;
   }
 
+  // ---------- Adição rápida + autocomplete ----------
+  onQuickInput() {
+    const termo = this.novoItem.trim();
+    if (termo.length < 1) {
+      this.sugestoes = [];
+      this.mostrarSugestoes = false;
+      return;
+    }
+    this.sugestoes = this.catalogoService.buscarProdutos(termo).slice(0, 6);
+    this.mostrarSugestoes = this.sugestoes.length > 0;
+  }
+
+  fecharSugestoes() {
+    // pequeno atraso para permitir o clique na sugestão
+    setTimeout(() => (this.mostrarSugestoes = false), 150);
+  }
+
+  async adicionarRapido(produto?: ProdutoCatalogo) {
+    const nome = produto ? produto.nome : this.novoItem.trim();
+    if (!nome) return;
+
+    if (produto) {
+      this.catalogoService.registrarUso(produto.id);
+    }
+
+    await this.tarefaService.salvar({
+      tarefa: nome,
+      quantidade: 1,
+      valorUnitario: produto?.precoMedio || 0,
+      feito: false
+    });
+
+    this.novoItem = '';
+    this.sugestoes = [];
+    this.mostrarSugestoes = false;
+  }
+
+  // ---------- Marcar comprado com 1 toque ----------
+  toggleComprado(item: any, ev: Event) {
+    ev.stopPropagation();
+    item.feito = !item.feito;
+    this.tarefaService.atualizar(item);
+  }
+
+  // ---------- Progresso ----------
+  getProgresso(): { comprados: number; total: number; percent: number } {
+    const total = this.tarefaCollection.length;
+    const comprados = this.tarefaCollection.filter(i => i.feito).length;
+    const percent = total > 0 ? comprados / total : 0;
+    return { comprados, total, percent };
+  }
+
+  // ---------- Agrupamento por categoria ----------
+  get itensAgrupados(): Array<{ categoria: string; itens: any[] }> {
+    const grupos = new Map<string, any[]>();
+    for (const item of this.tarefaCollection) {
+      const cat = item.categoria || 'Outros';
+      if (!grupos.has(cat)) grupos.set(cat, []);
+      grupos.get(cat)!.push(item);
+    }
+    return Array.from(grupos.entries())
+      .map(([categoria, itens]) => ({ categoria, itens }))
+      .sort((a, b) => a.categoria.localeCompare(b.categoria));
+  }
+
+  getCategoriaIcon(categoria: string): string {
+    const icons: { [key: string]: string } = {
+      'Laticínios & Padaria': 'cafe-outline',
+      'Carnes & Proteínas': 'restaurant-outline',
+      'Frutas & Verduras': 'leaf-outline',
+      'Grãos & Básicos': 'basket-outline',
+      'Higiene Pessoal': 'sparkles-outline',
+      'Higiene & Limpeza': 'sparkles-outline',
+      'Limpeza Doméstica': 'home-outline',
+      'Bebidas': 'wine-outline',
+      'Congelados': 'snow-outline',
+      'Doces & Salgadinhos': 'happy-outline',
+      'Outros': 'pricetag-outline'
+    };
+    return icons[categoria] || 'pricetag-outline';
+  }
+
   // 🔧 FIX: Métodos para gerenciar listas
   getNomeLista(): string {
     return this.currentList?.name || 'Minha Lista';
@@ -111,12 +215,14 @@ export class HomePage implements OnInit, OnDestroy {
       mode: 'ios',
       buttons: [
         {
-          text: '📱 Minha Lista (Offline)',
+          text: '📝 Minha Lista',
           icon: 'person',
           handler: async () => {
-            const listaPersonal = this.sharedListService.getPersonalList();
-            this.sharedListService.setCurrentList(listaPersonal);
-            await this.utilsService.showToast('Lista pessoal selecionada', 'success');
+            const listaPersonal = await this.sharedListService.ensurePersonalList();
+            if (listaPersonal) {
+              this.sharedListService.setCurrentList(listaPersonal);
+              await this.utilsService.showToast('Lista pessoal selecionada', 'success');
+            }
           }
         },
         {
@@ -480,16 +586,6 @@ export class HomePage implements OnInit, OnDestroy {
           }
         }
       ]
-    });
-    await alert.present();
-  }
-
-  async showComingSoon(feature: string) {
-    const alert = await this.alertCtrl.create({
-      header: 'Em Breve',
-      message: `A funcionalidade "${feature}" estará disponível em breve!`,
-      mode: 'ios',
-      buttons: ['OK']
     });
     await alert.present();
   }

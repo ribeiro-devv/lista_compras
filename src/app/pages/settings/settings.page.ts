@@ -5,6 +5,7 @@ import { PixModalComponent } from 'src/app/components/pix-modal/pix-modal.compon
 import { ManageListsModalComponent } from 'src/app/components/manage-lists-modal/manage-lists-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { SharedListService } from 'src/app/services/shared-list.service';
+import { ThemeService } from 'src/app/services/theme.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -15,8 +16,8 @@ import { Subscription } from 'rxjs';
 export class SettingsPage implements OnInit, OnDestroy {
 
   userProfile = {
-    name: 'Matheus Ribeiro',
-    email: 'usuario@exemplo.com',
+    name: '',
+    email: '',
     avatar: 'assets/rede.jpeg'
   };
 
@@ -38,7 +39,8 @@ export class SettingsPage implements OnInit, OnDestroy {
     private modalCtrl: ModalController,
     private toastController: ToastController,
     private authService: AuthService,
-    private sharedListService: SharedListService
+    private sharedListService: SharedListService,
+    private themeService: ThemeService
   ) { }
 
   ngOnInit() {
@@ -116,6 +118,8 @@ export class SettingsPage implements OnInit, OnDestroy {
     if (savedSettings) {
       this.appSettings = { ...this.appSettings, ...JSON.parse(savedSettings) };
     }
+    // O tema é gerenciado pelo ThemeService (fonte única de verdade).
+    this.appSettings.darkMode = this.themeService.isDarkMode();
   }
 
   saveUserProfile() {
@@ -190,7 +194,7 @@ export class SettingsPage implements OnInit, OnDestroy {
   }
 
   onDarkModeToggle() {
-    document.body.classList.toggle('dark', this.appSettings.darkMode);
+    this.themeService.setDark(this.appSettings.darkMode);
     this.saveAppSettings();
   }
 

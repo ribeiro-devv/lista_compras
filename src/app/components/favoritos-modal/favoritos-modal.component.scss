@@ -1,0 +1,74 @@
+.modal-header ion-toolbar {
+  --background: var(--app-gradient);
+  --color: #fff;
+}
+
+.favoritos-content {
+  --background: var(--ion-background-color);
+}
+
+.filtros {
+  padding: 12px 12px 4px;
+
+  ion-segment {
+    margin-bottom: 8px;
+  }
+
+  ion-searchbar {
+    --border-radius: var(--app-radius-sm);
+    --box-shadow: var(--app-shadow-sm);
+    padding: 0;
+  }
+}
+
+.produtos .produto-item {
+  --background: var(--ion-card-background);
+  --border-radius: var(--app-radius-sm);
+  margin: 8px 12px;
+  box-shadow: var(--app-shadow-sm);
+
+  h2 {
+    font-weight: 600;
+    font-size: 0.98rem;
+  }
+
+  p {
+    font-size: 0.8rem;
+    color: var(--ion-color-medium);
+  }
+
+  .usos {
+    color: var(--ion-color-secondary);
+  }
+}
+
+.fav-star {
+  font-size: 1.35rem;
+  color: var(--ion-color-medium);
+  margin-right: 12px;
+
+  &.ativo {
+    color: var(--ion-color-warning);
+  }
+}
+
+.add-icon {
+  font-size: 1.6rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 32px;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    color: var(--ion-color-primary);
+  }
+
+  p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+}

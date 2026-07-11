@@ -3,9 +3,6 @@
   "version": "0.0.1",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
-  "resolutions": {
-    "rxfire": "npm:empty-npm-package@1.0.0"
-  },
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -18,7 +15,6 @@
   "dependencies": {
     "@angular/common": "^14.0.0",
     "@angular/core": "^14.0.0",
-    "@angular/fire": "^7.4.1",
     "@angular/forms": "^14.0.0",
     "@angular/platform-browser": "^14.0.0",
     "@angular/platform-browser-dynamic": "^14.0.0",
@@ -31,8 +27,7 @@
     "@capacitor/keyboard": "4.0.1",
     "@capacitor/status-bar": "4.0.1",
     "@ionic/angular": "^6.1.9",
-    "firebase": "^9.23.0",
-    "firebase-admin": "^13.5.0",
+    "@supabase/supabase-js": "^2.110.2",
     "ionicons": "^6.0.3",
     "rxjs": "~6.6.0",
     "tslib": "^2.2.0",

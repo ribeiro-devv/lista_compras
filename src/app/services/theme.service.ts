@@ -5,13 +5,19 @@ import { Injectable } from '@angular/core';
 })
 export class ThemeService {
   private isDark = false;
+  private explicit = false; // true quando o usuário escolheu manualmente
 
   constructor() {
     this.loadTheme();
   }
 
   toggleTheme() {
-    this.isDark = !this.isDark;
+    this.setDark(!this.isDark);
+  }
+
+  setDark(isDark: boolean) {
+    this.isDark = isDark;
+    this.explicit = true;
     this.applyTheme();
     this.saveTheme();
   }
@@ -22,17 +28,25 @@ export class ThemeService {
 
   private loadTheme() {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
+    if (savedTheme === 'dark' || savedTheme === 'light') {
       this.isDark = savedTheme === 'dark';
+      this.explicit = true;
     } else {
-      // Verificar preferência do sistema
       this.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.explicit = false;
     }
     this.applyTheme();
   }
 
   private applyTheme() {
-    document.body.classList.toggle('dark', this.isDark);
+    // Só marca classes quando há escolha explícita; caso contrário deixa o
+    // @media (prefers-color-scheme) do variables.scss cuidar do padrão.
+    if (this.explicit) {
+      document.body.classList.toggle('dark', this.isDark);
+      document.body.classList.toggle('light', !this.isDark);
+    } else {
+      document.body.classList.remove('dark', 'light');
+    }
   }
 
   private saveTheme() {

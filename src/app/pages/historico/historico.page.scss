@@ -1,3 +1,11 @@
+.historico-header ion-toolbar.main-toolbar {
+  --background: var(--app-gradient);
+  --color: #fff;
+  --border-width: 0;
+
+  ion-button { --color: #fff; }
+}
+
 // ===== ESTATÍSTICAS NO TOPO =====
 .stats-container {
   padding: 16px;

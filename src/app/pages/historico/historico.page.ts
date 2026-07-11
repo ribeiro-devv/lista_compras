@@ -38,19 +38,21 @@ export class HistoricoPage implements OnInit {
 
   ionViewDidEnter() {
     this.carregarDados();
-    setTimeout(() => {
-      if (this.dadosGrafico.length > 0) {
-        this.criarGrafico();
-      }
-    }, 500);
   }
-  
-  carregarDados() {
+
+  async carregarDados() {
+    await this.historicoService.carregar();
     this.mesesDisponiveis = this.historicoService.obterMesesDisponiveis();
     this.estatisticasGerais = this.historicoService.obterEstatisticasGerais();
     this.prepararDadosGrafico();
     this.prepararCategorias();
     this.prepararListasRecentes();
+
+    setTimeout(() => {
+      if (this.dadosGrafico.length > 0) {
+        this.criarGrafico();
+      }
+    }, 300);
   }
 
   prepararDadosGrafico() {
@@ -160,8 +162,8 @@ export class HistoricoPage implements OnInit {
     const isDark = this.themeService.isDarkMode();
     const textColor = isDark ? '#ffffff' : '#333333';
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-    const barColor = '#3880ff';
-    const barGradientEnd = '#10dc60';
+    const barColor = '#6366f1';
+    const barGradientEnd = '#8b5cf6';
   
     // Encontrar valor máximo com margem
     const maxValue = Math.max(...this.dadosGrafico.map(d => d.valor));
