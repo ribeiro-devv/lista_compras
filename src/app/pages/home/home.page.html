@@ -129,10 +129,10 @@
   <!-- Barra de progresso -->
   <div class="progress-wrap" *ngIf="tarefaCollection.length > 0">
     <div class="progress-top">
-      <span>{{ getProgresso().comprados }} de {{ getProgresso().total }} no carrinho</span>
-      <span class="progress-pct">{{ (getProgresso().percent * 100) | number:'1.0-0' }}%</span>
+      <span>{{ progresso.comprados }} de {{ progresso.total }} no carrinho</span>
+      <span class="progress-pct">{{ (progresso.percent * 100) | number:'1.0-0' }}%</span>
     </div>
-    <ion-progress-bar [value]="getProgresso().percent" color="success"></ion-progress-bar>
+    <ion-progress-bar [value]="progresso.percent" color="success"></ion-progress-bar>
   </div>
 
   <!-- Estado vazio -->
@@ -163,7 +163,7 @@
 
   <!-- Lista de produtos agrupada por categoria -->
   <div class="produtos-groups" *ngIf="tarefaCollection.length > 0">
-    <div class="categoria-grupo" *ngFor="let grupo of itensAgrupados">
+    <div class="categoria-grupo" *ngFor="let grupo of itensAgrupados; trackBy: trackByCategoria">
       <div class="categoria-header">
         <ion-icon [name]="getCategoriaIcon(grupo.categoria)"></ion-icon>
         <span>{{ grupo.categoria }}</span>

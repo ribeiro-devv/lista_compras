@@ -31,6 +31,10 @@ export class HomePage implements OnInit, OnDestroy {
   sugestoes: ProdutoCatalogo[] = [];
   mostrarSugestoes = false;
 
+  // Derivados memoizados (recalculados só quando a lista muda) — evita flicker
+  itensAgrupados: Array<{ categoria: string; itens: any[] }> = [];
+  progresso = { comprados: 0, total: 0, percent: 0 };
+
   private listaSubscription?: Subscription;
   private currentListSubscription?: Subscription;
 
@@ -48,8 +52,8 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.listaSubscription = this.tarefaService.lista$.subscribe(lista => {
-      console.log('🔔 HomePage recebeu atualização da lista:', lista.length, 'itens');
       this.tarefaCollection = lista;
+      this.recomputar();
     });
 
     // 🔧 FIX: Observar mudanças na lista atual
@@ -112,6 +116,28 @@ export class HomePage implements OnInit, OnDestroy {
 
   listarTarefa() {
     this.tarefaCollection = this.tarefaService.listar();
+    this.recomputar();
+  }
+
+  /** Recalcula os derivados (agrupamento + progresso) só quando a lista muda. */
+  private recomputar() {
+    const grupos = new Map<string, any[]>();
+    for (const item of this.tarefaCollection) {
+      const cat = item.categoria || 'Outros';
+      if (!grupos.has(cat)) grupos.set(cat, []);
+      grupos.get(cat)!.push(item);
+    }
+    this.itensAgrupados = Array.from(grupos.entries())
+      .map(([categoria, itens]) => ({ categoria, itens }))
+      .sort((a, b) => a.categoria.localeCompare(b.categoria));
+
+    const total = this.tarefaCollection.length;
+    const comprados = this.tarefaCollection.filter(i => i.feito).length;
+    this.progresso = { comprados, total, percent: total > 0 ? comprados / total : 0 };
+  }
+
+  trackByCategoria(index: number, grupo: { categoria: string }) {
+    return grupo.categoria;
   }
 
   trackByFn(index: number, item: any) {
@@ -160,27 +186,6 @@ export class HomePage implements OnInit, OnDestroy {
     ev.stopPropagation();
     item.feito = !item.feito;
     this.tarefaService.atualizar(item);
-  }
-
-  // ---------- Progresso ----------
-  getProgresso(): { comprados: number; total: number; percent: number } {
-    const total = this.tarefaCollection.length;
-    const comprados = this.tarefaCollection.filter(i => i.feito).length;
-    const percent = total > 0 ? comprados / total : 0;
-    return { comprados, total, percent };
-  }
-
-  // ---------- Agrupamento por categoria ----------
-  get itensAgrupados(): Array<{ categoria: string; itens: any[] }> {
-    const grupos = new Map<string, any[]>();
-    for (const item of this.tarefaCollection) {
-      const cat = item.categoria || 'Outros';
-      if (!grupos.has(cat)) grupos.set(cat, []);
-      grupos.get(cat)!.push(item);
-    }
-    return Array.from(grupos.entries())
-      .map(([categoria, itens]) => ({ categoria, itens }))
-      .sort((a, b) => a.categoria.localeCompare(b.categoria));
   }
 
   getCategoriaIcon(categoria: string): string {
