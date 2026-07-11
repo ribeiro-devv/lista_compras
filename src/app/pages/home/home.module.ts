@@ -9,6 +9,7 @@ import { AddProdutoModalComponent } from 'src/app/components/add-produto-modal/a
 import { EditProdutoModalComponent } from 'src/app/components/edit-produto-modal/edit-produto-modal.component';
 import { InformacoesModalComponent } from 'src/app/components/informacoes-modal/informacoes-modal.component';
 import { TourOverlayComponent } from 'src/app/components/tour-overlay/tour-overlay.component';
+import { SharedComponentsModule } from 'src/app/components/shared-components.module';
 
 
 @NgModule({
@@ -18,6 +19,7 @@ import { TourOverlayComponent } from 'src/app/components/tour-overlay/tour-overl
     IonicModule,
     HomePageRoutingModule,
     ReactiveFormsModule,
+    SharedComponentsModule,
   ],
   declarations: [HomePage, AddProdutoModalComponent, EditProdutoModalComponent, InformacoesModalComponent, TourOverlayComponent]
 })

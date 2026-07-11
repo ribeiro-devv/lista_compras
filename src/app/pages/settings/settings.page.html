@@ -1,8 +1,8 @@
-<ion-header [translucent]="true">
-  <ion-toolbar color="primary">
+<ion-header [translucent]="true" class="settings-header">
+  <ion-toolbar class="main-toolbar">
     <ion-buttons slot="start">
       <ion-button (click)="goBack()">
-        <ion-icon name="arrow-back"></ion-icon>
+        <ion-icon name="arrow-back-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
     <ion-title>Configurações</ion-title>
@@ -46,10 +46,10 @@
         *ngIf="isAuthenticated"
         expand="block" 
         fill="outline" 
-        color="danger" 
+        color="danger"
         (click)="logout()"
-        style="margin-top: 12px;">
-        <ion-icon name="log-out" slot="start"></ion-icon>
+        class="logout-btn">
+        <ion-icon name="log-out-outline" slot="start"></ion-icon>
         Sair da Conta
       </ion-button>
     </ion-card-content>

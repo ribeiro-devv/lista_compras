@@ -1,237 +1,247 @@
-<ion-header [translucent]="true">
-  <!-- Toolbar Principal -->
-  <ion-toolbar color="primary">
-    <ion-title class="animate__animated animate__backInDown">
-      Lista de Compras
+<ion-header [translucent]="true" class="home-header">
+  <ion-toolbar class="main-toolbar">
+    <ion-title>
+      <span class="brand">
+        <ion-icon name="cart"></ion-icon>
+        Lista de Compras
+      </span>
     </ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="openSettings()">
-        <ion-icon name="settings"></ion-icon>
+        <ion-icon slot="icon-only" name="settings-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
-  
-  <!-- 🔧 NOVA TOOLBAR: Seletor de Lista -->
-  <ion-toolbar color="light">
+
+  <!-- Seletor de Lista -->
+  <ion-toolbar class="list-toolbar">
     <ion-chip slot="start" (click)="abrirSeletorLista()" class="lista-chip">
-      <ion-icon 
-        [name]="isListaPersonal() ? 'person' : 'people'" 
-        [color]="isListaPersonal() ? 'medium' : 'primary'">
+      <ion-icon
+        [name]="isListaPersonal() ? 'person-circle' : 'people-circle'">
       </ion-icon>
-      <ion-label>
-        <strong>{{ getNomeLista() }}</strong>
-      </ion-label>
-      <ion-icon name="chevron-down"></ion-icon>
+      <ion-label><strong>{{ getNomeLista() }}</strong></ion-label>
+      <ion-icon name="chevron-down" class="chev"></ion-icon>
     </ion-chip>
-    
-    <ion-badge 
-      slot="end" 
-      [color]="isListaPersonal() ? 'medium' : 'success'"
+
+    <ion-badge
+      slot="end"
+      [color]="isListaPersonal() ? 'primary' : 'secondary'"
       class="tipo-lista-badge">
-      {{ isListaPersonal() ? '📱 Offline' : '☁️ Sincronizado' }}
+      {{ isListaPersonal() ? 'Pessoal' : 'Compartilhada' }}
     </ion-badge>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  
+<ion-content [fullscreen]="true" class="home-content">
+
   <!-- Cards de ações rápidas -->
   <div class="quick-actions-container">
     <div class="quick-actions-scroll">
-      <!-- Card: Adicionar Produto -->
       <div class="action-card" (click)="showAdd()">
-        <div class="action-card-icon">
+        <div class="action-card-icon grad-1">
           <ion-icon name="add-circle-outline"></ion-icon>
         </div>
         <div class="action-card-content">
           <h3>Adicionar</h3>
-          <p>Novo produto na Lista</p>
+          <p>Novo produto</p>
         </div>
       </div>
 
-      <!-- Card: Histórico -->
       <div class="action-card" (click)="openHistorico()">
-        <div class="action-card-icon">
-          <ion-icon name="analytics-outline"></ion-icon>
+        <div class="action-card-icon grad-2">
+          <ion-icon name="time-outline"></ion-icon>
         </div>
         <div class="action-card-content">
           <h3>Histórico</h3>
-          <p>Ver compras</p>
+          <p>Compras antigas</p>
         </div>
       </div>
 
-      <!-- Card: Estatísticas (fictício) -->
-      <div class="action-card" (click)="showComingSoon('Estatísticas')">
-        <div class="action-card-icon">
-          <ion-icon name="bar-chart-outline"></ion-icon>
+      <div class="action-card" (click)="openEstatisticas()">
+        <div class="action-card-icon grad-3">
+          <ion-icon name="stats-chart-outline"></ion-icon>
         </div>
         <div class="action-card-content">
           <h3>Estatísticas</h3>
-          <p>Ver dados</p>
+          <p>Seus gastos</p>
         </div>
       </div>
 
-      <!-- Card: Categorias (fictício) -->
-      <div class="action-card" (click)="showComingSoon('Categorias')">
-        <div class="action-card-icon">
-          <ion-icon name="pricetags-outline"></ion-icon>
-        </div>
-        <div class="action-card-content">
-          <h3>Categorias</h3>
-          <p>Organizar</p>
-        </div>
-      </div>
-
-      <!-- Card: Favoritos (fictício) -->
-      <div class="action-card" (click)="showComingSoon('Favoritos')">
-        <div class="action-card-icon">
-          <ion-icon name="heart-outline"></ion-icon>
+      <div class="action-card" (click)="openFavoritos()">
+        <div class="action-card-icon grad-4">
+          <ion-icon name="star-outline"></ion-icon>
         </div>
         <div class="action-card-content">
           <h3>Favoritos</h3>
-          <p>Mais comprados</p>
+          <p>Adição rápida</p>
         </div>
       </div>
 
-      <!-- Card: Compartilhar (fictício) -->
-      <div class="action-card" (click)="showComingSoon('Compartilhar')">
-        <div class="action-card-icon">
-          <ion-icon name="share-social-outline"></ion-icon>
+      <div class="action-card" (click)="openCompartilhar()">
+        <div class="action-card-icon grad-5">
+          <ion-icon name="people-outline"></ion-icon>
         </div>
         <div class="action-card-content">
           <h3>Compartilhar</h3>
-          <p>Enviar lista</p>
+          <p>Listas em grupo</p>
         </div>
       </div>
 
-      <!-- Card: Calculadora (fictício) -->
-      <div class="action-card" (click)="showComingSoon('Calculadora')">
-        <div class="action-card-icon">
-          <ion-icon name="calculator-outline"></ion-icon>
-        </div>
-        <div class="action-card-content">
-          <h3>Calculadora</h3>
-          <p>Orçamento</p>
-        </div>
-      </div>
-
-      <!-- Card: Configurações -->
       <div class="action-card" (click)="openSettings()">
-        <div class="action-card-icon">
+        <div class="action-card-icon grad-6">
           <ion-icon name="settings-outline"></ion-icon>
         </div>
         <div class="action-card-content">
-          <h3>Configurações</h3>
-          <p>Ajustes</p>
+          <h3>Ajustes</h3>
+          <p>Preferências</p>
         </div>
       </div>
     </div>
   </div>
-  
-  <!-- Mensagem quando não há produtos -->
-  <div *ngIf="tarefaCollection.length === 0" class="empty-state">
-    <ion-card>
-      <ion-card-content class="ion-text-center">
-        <ion-icon name="basket-outline" size="large" color="medium"></ion-icon>
-        <h2>Lista Vazia</h2>
-        <p>Sua lista de compras está vazia. Adicione alguns produtos para começar!</p>
-      </ion-card-content>
-    </ion-card>
+
+  <!-- Adição rápida com autocomplete -->
+  <div class="quick-add">
+    <div class="quick-add-bar">
+      <ion-icon name="add-circle" class="qa-icon"></ion-icon>
+      <input
+        class="qa-input"
+        type="text"
+        [(ngModel)]="novoItem"
+        (ngModelChange)="onQuickInput()"
+        (keyup.enter)="adicionarRapido()"
+        (blur)="fecharSugestoes()"
+        placeholder="Adicionar item... (ex: arroz)"
+        autocomplete="off" />
+      <ion-button *ngIf="novoItem.trim()" fill="clear" class="qa-send" (click)="adicionarRapido()">
+        <ion-icon name="arrow-forward-circle" slot="icon-only"></ion-icon>
+      </ion-button>
+    </div>
+
+    <div class="qa-suggestions" *ngIf="mostrarSugestoes">
+      <button class="qa-suggestion" *ngFor="let s of sugestoes" (mousedown)="adicionarRapido(s)">
+        <ion-icon [name]="s.favorito ? 'star' : 'pricetag-outline'" [class.fav]="s.favorito"></ion-icon>
+        <span class="qa-nome">{{ s.nome }}</span>
+        <span class="qa-preco" *ngIf="s.precoMedio">~ R$ {{ s.precoMedio | number:'1.2-2' }}</span>
+      </button>
+    </div>
   </div>
 
-  <ion-card *ngIf="isListaCompleta()" class="complete-notification">
-    <ion-card-content class="ion-text-center">
-      <ion-icon name="checkmark-circle" size="large" color="success"></ion-icon>
-      <h2>Lista Concluída! 🎉</h2>
-      <p>Você completou todos os itens da sua lista. Que tal arquivá-la no histórico?</p>
-      <ion-button (click)="arquivarLista()" fill="solid" color="success">
-        <ion-icon name="archive-outline" slot="start"></ion-icon>
-        Arquivar Lista
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+  <!-- Barra de progresso -->
+  <div class="progress-wrap" *ngIf="tarefaCollection.length > 0">
+    <div class="progress-top">
+      <span>{{ getProgresso().comprados }} de {{ getProgresso().total }} no carrinho</span>
+      <span class="progress-pct">{{ (getProgresso().percent * 100) | number:'1.0-0' }}%</span>
+    </div>
+    <ion-progress-bar [value]="getProgresso().percent" color="success"></ion-progress-bar>
+  </div>
 
-  <!-- Lista de produtos -->
-  <ion-list class="animate__animated animate__bounceInUp" *ngIf="tarefaCollection.length > 0">
-    <ion-item-sliding *ngFor="let item of tarefaCollection; trackBy: trackByFn">
-      <ion-item (click)="openActions(item)">
-        <ion-label>
-          <h2 [class.completed]="item.feito">
-            <strong>{{item.tarefa}}</strong>
-          </h2>
-          <div class="item-details">
-            <p class="text-quantidade">Qtd: {{item.quantidade}}</p>
-            <p class="text-valor" *ngIf="item.valorUnitario > 0">
-              Unit: {{formatarMoeda(item.valorUnitario)}}
-            </p>
-            <p class="text-subtotal" *ngIf="item.valorUnitario > 0">
-              <strong>Subtotal: {{formatarMoeda(calcularSubtotal(item))}}</strong>
-            </p>
-          </div>
-          <p class="text-p" [ngClass]="{'status-success': item.feito, 'status-pending': !item.feito}">
-            {{item.feito ? 'Adicionado no Carrinho' : 'Não Adicionado no Carrinho'}}
-          </p>
-        </ion-label>
-        <ion-icon 
-          slot="start" 
-          [name]="item.feito ? 'checkmark-circle' : 'information-circle'" 
-          [color]="item.feito ? 'success' : 'warning'">
-        </ion-icon>
-      </ion-item>
-      
-      <ion-item-options side="end">
-        <ion-item-option color="danger" (click)="delete(item)">
-          <ion-icon name="trash-outline"></ion-icon>
-          Excluir
-        </ion-item-option>
-      </ion-item-options>
-    </ion-item-sliding>
-  </ion-list>
+  <!-- Estado vazio -->
+  <div *ngIf="tarefaCollection.length === 0" class="empty-state">
+    <div class="empty-illustration">
+      <ion-icon name="basket-outline"></ion-icon>
+    </div>
+    <h2>Lista vazia</h2>
+    <p>Adicione produtos para começar suas compras.</p>
+    <ion-button (click)="showAdd()" shape="round" class="empty-cta">
+      <ion-icon name="add" slot="start"></ion-icon>
+      Adicionar produto
+    </ion-button>
+  </div>
 
-  <!-- Rodapé com totais -->
-  <ion-card *ngIf="tarefaCollection.length > 0 && getTotalGeral() > 0" class="totals-card">
-    <ion-card-header>
-      <ion-card-title class="totals-title">
-        <ion-icon name="calculator-outline"></ion-icon>
-        Resumo dos Gastos
-      </ion-card-title>
-    </ion-card-header>
-    <ion-card-content class="totals-content">
-      <ion-item class="total-geral">
-        <ion-label>
-          <h2><strong>Total Comprado</strong></h2>
-        </ion-label>
-        <ion-note slot="end" class="total-geral-value">
-          <strong>{{formatarMoeda(getTotalComprado())}}</strong>
-        </ion-note>
-      </ion-item>
-    </ion-card-content>
-  </ion-card>
+  <!-- Lista concluída -->
+  <div *ngIf="isListaCompleta()" class="complete-notification">
+    <ion-icon name="checkmark-circle"></ion-icon>
+    <div class="complete-text">
+      <h2>Lista concluída! 🎉</h2>
+      <p>Você comprou todos os itens. Que tal arquivá-la no histórico?</p>
+    </div>
+    <ion-button (click)="arquivarLista()" fill="solid" color="success" shape="round" size="small">
+      <ion-icon name="archive-outline" slot="start"></ion-icon>
+      Arquivar
+    </ion-button>
+  </div>
 
-  <!-- Floating Action Buttons -->
-  
-  <!-- Botão Tour (ao lado do Excluir Todos) -->
-  <ion-fab *ngIf="!tourService.isTourCompletedOnce()" vertical="bottom" horizontal="start" slot="fixed" style="left: 3%; margin-bottom: 10px;">
-    <ion-fab-button (click)="restartTour()" color="tertiary" class="animate__animated animate__bounce" size="small">
-      <ion-icon name="help-circle-outline"></ion-icon>
+  <!-- Lista de produtos agrupada por categoria -->
+  <div class="produtos-groups" *ngIf="tarefaCollection.length > 0">
+    <div class="categoria-grupo" *ngFor="let grupo of itensAgrupados">
+      <div class="categoria-header">
+        <ion-icon [name]="getCategoriaIcon(grupo.categoria)"></ion-icon>
+        <span>{{ grupo.categoria }}</span>
+        <span class="categoria-count">{{ grupo.itens.length }}</span>
+      </div>
+
+      <ion-list class="produtos-list" lines="none">
+        <ion-item-sliding *ngFor="let item of grupo.itens; trackBy: trackByFn">
+          <ion-item button detail="false" (click)="openActions(item)" class="produto-item" [class.feito]="item.feito">
+            <div slot="start" class="status-dot" [class.on]="item.feito" (click)="toggleComprado(item, $event)">
+              <ion-icon [name]="item.feito ? 'checkmark' : 'ellipse-outline'"></ion-icon>
+            </div>
+            <ion-label>
+              <h2 [class.completed]="item.feito">{{ item.tarefa }}</h2>
+              <div class="item-details">
+                <span class="chip-qtd">Qtd: {{ item.quantidade }}</span>
+                <span class="chip-valor" *ngIf="item.valorUnitario > 0">
+                  {{ formatarMoeda(item.valorUnitario) }}
+                </span>
+                <span class="chip-subtotal" *ngIf="item.valorUnitario > 0">
+                  {{ formatarMoeda(calcularSubtotal(item)) }}
+                </span>
+              </div>
+              <p class="status-tag" [ngClass]="{'ok': item.feito, 'pending': !item.feito}">
+                {{ item.feito ? 'No carrinho' : 'Toque no círculo p/ adicionar no carrinho' }}
+              </p>
+            </ion-label>
+          </ion-item>
+
+          <ion-item-options side="end">
+            <ion-item-option color="danger" (click)="delete(item)">
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
+      </ion-list>
+    </div>
+  </div>
+
+  <!-- Resumo dos gastos -->
+  <div *ngIf="tarefaCollection.length > 0 && getTotalGeral() > 0" class="totals-card">
+    <div class="totals-row">
+      <div class="totals-label">
+        <ion-icon name="wallet-outline"></ion-icon>
+        <span>Total no carrinho</span>
+      </div>
+      <div class="totals-value">{{ formatarMoeda(getTotalComprado()) }}</div>
+    </div>
+    <div class="totals-row secondary">
+      <span>Estimativa da lista completa</span>
+      <span>{{ formatarMoeda(getTotalGeral()) }}</span>
+    </div>
+  </div>
+
+  <!-- Espaço para os FABs não cobrirem conteúdo -->
+  <div class="fab-spacer" *ngIf="tarefaCollection.length > 0"></div>
+
+  <!-- FAB Tour -->
+  <ion-fab *ngIf="!tourService.isTourCompletedOnce()" vertical="bottom" horizontal="start" slot="fixed" class="fab-tour">
+    <ion-fab-button (click)="restartTour()" color="tertiary" size="small">
+      <ion-icon name="help-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>
-  
-  <!-- Botão Adicionar (principal) -->
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed" style="margin-bottom: 10px;">
-    <ion-fab-button (click)="showAdd()" color="primary" class="animate__animated animate__bounce">
+
+  <!-- FAB Adicionar -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="fab-add">
+    <ion-fab-button (click)="showAdd()" class="fab-primary">
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
-  
-  <!-- Botão Excluir Todos (só aparece quando há itens) -->
-  <ion-fab vertical="bottom" horizontal="start" slot="fixed" *ngIf="tarefaCollection.length > 0" style="margin-bottom: 10px;">
-    <ion-fab-button (click)="showExclusion()" color="danger" class="animate__animated animate__bounce" size="small">
+
+  <!-- FAB Excluir Todos -->
+  <ion-fab vertical="bottom" horizontal="start" slot="fixed" *ngIf="tarefaCollection.length > 0" class="fab-clear">
+    <ion-fab-button (click)="showExclusion()" color="danger" size="small">
       <ion-icon name="trash-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>
 
-  <!-- Componente de Tour -->
   <app-tour-overlay></app-tour-overlay>
 
 </ion-content>

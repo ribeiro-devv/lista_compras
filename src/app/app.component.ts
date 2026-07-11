@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from './services/auth.service';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -7,13 +8,12 @@ import { AuthService } from './services/auth.service';
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent implements OnInit {
-  
-  constructor(private authService: AuthService) {}
+
+  // Injetar o ThemeService no boot garante que o tema seja aplicado cedo.
+  constructor(private authService: AuthService, private themeService: ThemeService) {}
 
   ngOnInit() {
-    // Garantir que o AuthService seja inicializado
-    // Isso força o onAuthStateChanged a ser chamado antes das rotas
-    // Não precisa fazer nada, apenas garante a inicialização
-    this.authService.currentUser$.subscribe(); // Apenas para garantir inicialização
+    // Garante a inicialização do AuthService (verifica a sessão persistida).
+    this.authService.currentUser$.subscribe();
   }
 }

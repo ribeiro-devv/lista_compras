@@ -1,21 +1,17 @@
 import { Injectable } from '@angular/core';
-import { 
-  Auth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  User,
-  sendPasswordResetEmail,
-  updateProfile,
-  sendEmailVerification
-} from '@angular/fire/auth';
-import { Firestore, doc, setDoc, getDoc } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map, first } from 'rxjs/operators';
+import { AuthError, User as SupabaseUser } from '@supabase/supabase-js';
+import { SupabaseService } from './supabase.service';
+
+/** Usuário normalizado usado em todo o app (mantém o formato antigo do Firebase). */
+export interface AppUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+  emailVerified: boolean;
+}
 
 export interface UserProfile {
   uid: string;
@@ -30,374 +26,221 @@ export interface UserProfile {
   providedIn: 'root'
 })
 export class AuthService {
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
+  private currentUserSubject = new BehaviorSubject<AppUser | null>(null);
+  public currentUser$: Observable<AppUser | null> = this.currentUserSubject.asObservable();
 
   private userProfileSubject = new BehaviorSubject<UserProfile | null>(null);
   public userProfile$: Observable<UserProfile | null> = this.userProfileSubject.asObservable();
 
-  private hasFirestorePermissionError = false; // Flag para evitar tentativas repetidas
-  private authStateChecked = false; // Flag para indicar se o Firebase já verificou a sessão
+  private authStateChecked = false;
+
+  /** Resolve assim que a sessão persistida é verificada (usado pelos guards). */
+  private authReadyResolve!: (user: AppUser | null) => void;
+  public authReady: Promise<AppUser | null> = new Promise((res) => (this.authReadyResolve = res));
 
   constructor(
-    private auth: Auth,
-    private firestore: Firestore,
+    private supabaseService: SupabaseService,
     private router: Router
   ) {
-    // Observar mudanças no estado de autenticação
-    // O Firebase Auth automaticamente verifica a sessão persistida ao inicializar
-    onAuthStateChanged(this.auth, async (user) => {
-      this.currentUserSubject.next(user);
-      this.authStateChecked = true; // Marca que o Firebase já verificou
-      
-      if (user) {
-        // Se já teve erro de permissão, criar perfil local apenas
-        if (this.hasFirestorePermissionError) {
-          this.createLocalProfile(user);
-        } else {
-          await this.loadUserProfile(user.uid);
-        }
-      } else {
-        this.userProfileSubject.next(null);
-        this.hasFirestorePermissionError = false; // Reset ao fazer logout
-      }
+    if (!this.supabaseService.isConfigured) {
+      // Sem chaves ainda: marca como verificado para não travar os guards.
+      this.authStateChecked = true;
+      this.authReadyResolve(null);
+      return;
+    }
+
+    // Estado inicial (sessão persistida) + mudanças de auth.
+    this.supabaseService.client.auth.getSession().then(({ data }) => {
+      this.handleUser(data.session?.user ?? null);
+      this.authStateChecked = true;
+      this.authReadyResolve(this.getCurrentUser());
+    });
+
+    this.supabaseService.client.auth.onAuthStateChange((_event, session) => {
+      this.handleUser(session?.user ?? null);
+      this.authStateChecked = true;
     });
   }
 
-  /**
-   * Verifica se o Firebase já verificou a sessão persistida
-   */
   isAuthStateChecked(): boolean {
     return this.authStateChecked;
   }
 
-  /**
-   * Registra um novo usuário com email e senha
-   */
-  async register(email: string, password: string, displayName?: string): Promise<User> {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
-      const user = userCredential.user;
-
-      // Atualizar perfil do usuário
-      if (displayName) {
-        try {
-          await updateProfile(user, { displayName });
-        } catch (error) {
-          console.warn('Erro ao atualizar perfil do usuário:', error);
-          // Continua mesmo se falhar
-        }
+  /** Registra um novo usuário. O perfil e a "Minha Lista" são criados por trigger no banco. */
+  async register(email: string, password: string, displayName?: string): Promise<AppUser> {
+    this.assertConfigured();
+    const { data, error } = await this.supabaseService.client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName || '' }
       }
+    });
 
-      // Enviar email de verificação (não bloqueia se falhar)
-      try {
-        await sendEmailVerification(user);
-      } catch (error) {
-        console.warn('Erro ao enviar email de verificação:', error);
-        // Continua mesmo se falhar
-      }
+    if (error) throw this.handleAuthError(error);
+    if (!data.user) throw new Error('Não foi possível criar a conta.');
 
-      // Criar perfil no Firestore (não bloqueia se falhar)
-      // O perfil será criado na próxima vez ou quando as regras forem configuradas
-      await this.createUserProfile(user, displayName);
-
-      return user;
-    } catch (error: any) {
-      throw this.handleAuthError(error);
-    }
+    return this.toAppUser(data.user);
   }
 
-  /**
-   * Login com email e senha
-   */
-  async login(email: string, password: string): Promise<User> {
-    try {
-      const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
-      return userCredential.user;
-    } catch (error: any) {
-      throw this.handleAuthError(error);
-    }
+  /** Login com email e senha. */
+  async login(email: string, password: string): Promise<AppUser> {
+    this.assertConfigured();
+    const { data, error } = await this.supabaseService.client.auth.signInWithPassword({ email, password });
+    if (error) throw this.handleAuthError(error);
+    return this.toAppUser(data.user);
   }
 
-  /**
-   * Login com Google
-   */
-  async loginWithGoogle(): Promise<User> {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope('profile');
-      provider.addScope('email');
-      
-      const userCredential = await signInWithPopup(this.auth, provider);
-      const user = userCredential.user;
-
-      // Verificar se o perfil já existe no Firestore
-      // Se não existir, tenta criar (não bloqueia se falhar)
-      try {
-        const profileExists = await this.checkUserProfileExists(user.uid);
-        if (!profileExists) {
-          await this.createUserProfile(user);
-        }
-      } catch (error) {
-        // Se não conseguir verificar ou criar, tenta criar mesmo assim
-        // Pode ser que as regras não permitam verificar mas permitam criar
-        await this.createUserProfile(user);
-      }
-
-      return user;
-    } catch (error: any) {
-      throw this.handleAuthError(error);
-    }
+  /** Login com Google (requer o provider habilitado no Supabase). */
+  async loginWithGoogle(): Promise<void> {
+    this.assertConfigured();
+    const { error } = await this.supabaseService.client.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/home' }
+    });
+    if (error) throw this.handleAuthError(error);
+    // O fluxo OAuth redireciona a página; a sessão é capturada no retorno.
   }
 
-  /**
-   * Logout
-   */
   async logout(): Promise<void> {
-    try {
-      await signOut(this.auth);
-      this.userProfileSubject.next(null);
-      this.router.navigate(['/login']);
-    } catch (error: any) {
-      throw this.handleAuthError(error);
-    }
+    this.assertConfigured();
+    const { error } = await this.supabaseService.client.auth.signOut();
+    if (error) throw this.handleAuthError(error);
+    this.userProfileSubject.next(null);
+    this.currentUserSubject.next(null);
+    this.router.navigate(['/login']);
   }
 
-  /**
-   * Envia email de redefinição de senha
-   */
   async resetPassword(email: string): Promise<void> {
-    try {
-      await sendPasswordResetEmail(this.auth, email);
-    } catch (error: any) {
-      throw this.handleAuthError(error);
-    }
+    this.assertConfigured();
+    const { error } = await this.supabaseService.client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/login'
+    });
+    if (error) throw this.handleAuthError(error);
   }
 
-  /**
-   * Obtém o usuário atual
-   */
-  getCurrentUser(): User | null {
+  getCurrentUser(): AppUser | null {
     return this.currentUserSubject.value;
   }
 
-  /**
-   * Obtém o perfil do usuário atual
-   */
   getCurrentUserProfile(): UserProfile | null {
     return this.userProfileSubject.value;
   }
 
-  /**
-   * Verifica se o usuário está autenticado
-   */
   isAuthenticated(): boolean {
     return this.currentUserSubject.value !== null;
   }
 
-  /**
-   * Carrega o perfil do usuário do Firestore
-   */
+  /** Atualiza nome/foto do perfil (auth metadata + tabela profiles). */
+  async updateUserProfile(displayName?: string, photoURL?: string): Promise<void> {
+    this.assertConfigured();
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const metadata: Record<string, string> = {};
+    if (displayName !== undefined) metadata['display_name'] = displayName;
+    if (photoURL !== undefined) metadata['photo_url'] = photoURL;
+
+    const { error: authErr } = await this.supabaseService.client.auth.updateUser({ data: metadata });
+    if (authErr) throw this.handleAuthError(authErr);
+
+    const update: Record<string, any> = {};
+    if (displayName !== undefined) update['display_name'] = displayName;
+    if (photoURL !== undefined) update['photo_url'] = photoURL;
+
+    const { error: dbErr } = await this.supabaseService.client
+      .from('profiles')
+      .update(update)
+      .eq('id', user.uid);
+    if (dbErr) console.warn('Erro ao atualizar perfil no banco:', dbErr.message);
+
+    await this.loadUserProfile(user.uid);
+  }
+
+  // ---- internos ----
+
+  private handleUser(supaUser: SupabaseUser | null): void {
+    if (!supaUser) {
+      this.currentUserSubject.next(null);
+      this.userProfileSubject.next(null);
+      return;
+    }
+    const appUser = this.toAppUser(supaUser);
+    this.currentUserSubject.next(appUser);
+    // Perfil básico imediato (do auth) + carrega o completo do banco.
+    this.userProfileSubject.next({ ...appUser });
+    this.loadUserProfile(appUser.uid);
+  }
+
+  private toAppUser(supaUser: SupabaseUser): AppUser {
+    const meta = supaUser.user_metadata || {};
+    return {
+      uid: supaUser.id,
+      email: supaUser.email || '',
+      displayName: meta['display_name'] || meta['full_name'] || meta['name'] || '',
+      photoURL: meta['photo_url'] || meta['avatar_url'] || '',
+      emailVerified: !!supaUser.email_confirmed_at
+    };
+  }
+
   private async loadUserProfile(uid: string): Promise<void> {
     try {
-      const userDoc = await getDoc(doc(this.firestore, 'users', uid));
-      
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        this.userProfileSubject.next({
-          uid,
-          email: data['email'],
-          displayName: data['displayName'],
-          photoURL: data['photoURL'],
-          emailVerified: data['emailVerified'] || false,
-          createdAt: data['createdAt']?.toDate()
-        });
-        this.hasFirestorePermissionError = false; // Reset flag se funcionar
-      } else {
-        // Se não existe perfil, criar um básico (sem bloquear se falhar)
-        const user = this.getCurrentUser();
-        if (user) {
-          await this.createUserProfile(user);
-        }
-      }
-    } catch (error: any) {
-      // Não mostrar erro se for permissão - apenas logar aviso uma vez
-      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
-        this.hasFirestorePermissionError = true;
-        if (!this.userProfileSubject.value) { // Só logar se não tiver perfil ainda
-          console.warn('⚠️ Aviso: Regras do Firestore não configuradas. O usuário está logado, mas o perfil não será salvo no Firestore.');
-          console.info('💡 Configure as regras em: Firestore Database > Rules');
-        }
-        // Criar perfil básico local com dados do Auth
-        const user = this.getCurrentUser();
-        if (user) {
-          this.createLocalProfile(user);
-        }
-      } else {
-        console.error('Erro ao carregar perfil do usuário:', error);
-      }
-    }
-  }
+      const { data, error } = await this.supabaseService.client
+        .from('profiles')
+        .select('*')
+        .eq('id', uid)
+        .single();
 
-  /**
-   * Cria perfil local quando Firestore não está disponível
-   */
-  private createLocalProfile(user: User): void {
-    this.userProfileSubject.next({
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || '',
-      photoURL: user.photoURL || '',
-      emailVerified: user.emailVerified,
-      createdAt: new Date()
-    });
-  }
+      if (error || !data) return; // mantém o perfil básico já emitido
 
-  /**
-   * Cria perfil do usuário no Firestore
-   */
-  private async createUserProfile(user: User, displayName?: string): Promise<void> {
-    try {
-      const userRef = doc(this.firestore, 'users', user.uid);
-      const userData = {
-        email: user.email,
-        displayName: displayName || user.displayName || '',
-        photoURL: user.photoURL || '',
-        emailVerified: user.emailVerified,
-        createdAt: new Date(),
-        lastLogin: new Date()
-      };
-
-      await setDoc(userRef, userData, { merge: true });
-      
-      // Atualizar perfil local
+      const user = this.getCurrentUser();
       this.userProfileSubject.next({
-        uid: user.uid,
-        email: user.email || '',
-        displayName: userData.displayName,
-        photoURL: userData.photoURL,
-        emailVerified: user.emailVerified,
-        createdAt: userData.createdAt
+        uid,
+        email: data['email'] || user?.email || '',
+        displayName: data['display_name'] || user?.displayName || '',
+        photoURL: data['photo_url'] || user?.photoURL || '',
+        emailVerified: user?.emailVerified ?? false,
+        createdAt: data['created_at'] ? new Date(data['created_at']) : undefined
       });
-    } catch (error: any) {
-      console.error('Erro ao criar perfil do usuário no Firestore:', error);
-      // Não bloqueia o registro/login se falhar - o perfil pode ser criado depois
-      // Se for erro de permissão, mostrar mensagem útil
-      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
-        console.warn('⚠️ Regras de segurança do Firestore não configuradas. Configure as regras em: Firestore Database > Rules');
-        console.warn('💡 O usuário foi criado, mas o perfil não foi salvo. Configure as regras para permitir.');
-      }
-      // Não lança erro para não bloquear o registro/login
-      // O perfil será criado na próxima vez ou quando as regras forem configuradas
+    } catch (e) {
+      console.warn('Não foi possível carregar o perfil:', e);
     }
   }
 
-  /**
-   * Verifica se o perfil do usuário existe no Firestore
-   */
-  private async checkUserProfileExists(uid: string): Promise<boolean> {
-    try {
-      const userDoc = await getDoc(doc(this.firestore, 'users', uid));
-      return userDoc.exists();
-    } catch (error) {
-      console.error('Erro ao verificar perfil do usuário:', error);
-      return false;
+  private assertConfigured(): void {
+    if (!this.supabaseService.isConfigured) {
+      throw new Error('Supabase não configurado. Veja SUPABASE_SETUP_GUIDE.md.');
     }
   }
 
-  /**
-   * Atualiza o perfil do usuário
-   */
-  async updateUserProfile(displayName?: string, photoURL?: string): Promise<void> {
-    const user = this.getCurrentUser();
-    if (!user) {
-      throw new Error('Usuário não autenticado');
+  /** Traduz erros do Supabase em mensagens amigáveis em PT-BR. */
+  private handleAuthError(error: AuthError | Error): Error {
+    const raw = (error?.message || '').toLowerCase();
+
+    if (raw.includes('invalid login credentials')) {
+      return new Error('E-mail ou senha incorretos.');
     }
-
-    try {
-      // Atualizar no Auth
-      if (displayName || photoURL) {
-        await updateProfile(user, {
-          displayName,
-          photoURL
-        });
-      }
-
-      // Atualizar no Firestore
-      const userRef = doc(this.firestore, 'users', user.uid);
-      const updateData: any = {};
-      if (displayName !== undefined) updateData.displayName = displayName;
-      if (photoURL !== undefined) updateData.photoURL = photoURL;
-
-      await setDoc(userRef, updateData, { merge: true });
-
-      // Recarregar perfil
-      await this.loadUserProfile(user.uid);
-    } catch (error: any) {
-      throw this.handleAuthError(error);
+    if (raw.includes('email not confirmed')) {
+      return new Error('Confirme seu e-mail antes de entrar (verifique sua caixa de entrada).');
     }
-  }
-
-  /**
-   * Trata erros de autenticação e retorna mensagens amigáveis
-   */
-  private handleAuthError(error: any): Error {
-    let message = 'Ocorreu um erro na autenticação.';
-
-    // Verificar se é erro 400 (Bad Request) - geralmente significa que auth não está habilitada
-    if (error.code === 'auth/operation-not-allowed' || 
-        (error.message && error.message.includes('API key not valid')) ||
-        (error.code && error.code.includes('400'))) {
-      message = 'Autenticação não está habilitada no Firebase. Configure no Firebase Console: Authentication > Sign-in method > Habilitar Email/Password e Google.';
-    } else {
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          message = 'Este email já está sendo usado.';
-          break;
-        case 'auth/invalid-email':
-          message = 'Email inválido.';
-          break;
-        case 'auth/operation-not-allowed':
-          message = 'Este método de autenticação não está habilitado. Habilite no Firebase Console.';
-          break;
-        case 'auth/weak-password':
-          message = 'Senha muito fraca. Use pelo menos 6 caracteres.';
-          break;
-        case 'auth/user-disabled':
-          message = 'Esta conta foi desabilitada.';
-          break;
-        case 'auth/user-not-found':
-          message = 'Usuário não encontrado.';
-          break;
-        case 'auth/wrong-password':
-          message = 'Senha incorreta.';
-          break;
-        case 'auth/too-many-requests':
-          message = 'Muitas tentativas. Tente novamente mais tarde.';
-          break;
-        case 'auth/network-request-failed':
-          message = 'Erro de conexão. Verifique sua internet.';
-          break;
-        case 'auth/popup-closed-by-user':
-          message = 'Popup fechado pelo usuário.';
-          break;
-        case 'auth/unauthorized-domain':
-          message = 'Este domínio não está autorizado. Adicione no Firebase Console.';
-          break;
-        case 'auth/popup-blocked':
-          message = 'Popup bloqueado pelo navegador. Permita popups para este site.';
-          break;
-        default:
-          // Se for um erro HTTP 400, pode ser que o método não está habilitado
-          if (error.message && (error.message.includes('400') || error.message.includes('Bad Request'))) {
-            message = 'Erro ao conectar com Firebase. Verifique se a autenticação está habilitada no Firebase Console.';
-          } else {
-            message = error.message || error.code || message;
-          }
-      }
+    if (raw.includes('user already registered') || raw.includes('already been registered')) {
+      return new Error('Este e-mail já está cadastrado.');
     }
-
-    return new Error(message);
+    if (raw.includes('password should be at least')) {
+      return new Error('Senha muito curta. Use pelo menos 6 caracteres.');
+    }
+    if (raw.includes('unable to validate email') || raw.includes('invalid email')) {
+      return new Error('E-mail inválido.');
+    }
+    if (raw.includes('rate limit') || raw.includes('too many')) {
+      return new Error('Muitas tentativas. Aguarde um momento e tente novamente.');
+    }
+    if (raw.includes('provider is not enabled')) {
+      return new Error('Login com Google não está habilitado no Supabase.');
+    }
+    if (raw.includes('network') || raw.includes('failed to fetch')) {
+      return new Error('Erro de conexão. Verifique sua internet.');
+    }
+    return new Error(error?.message || 'Ocorreu um erro na autenticação.');
   }
 }
-

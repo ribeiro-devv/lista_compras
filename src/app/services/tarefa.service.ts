@@ -2,398 +2,285 @@ import { Injectable } from '@angular/core';
 import { HistoricoService, ItemCompra } from './historico.service';
 import { CatalogoService } from './catalogo.service';
 import { AuthService } from './auth.service';
-import { SharedListService } from './shared-list.service';
-
-import { Firestore, collection, addDoc, collectionData, doc, deleteDoc, updateDoc, query, orderBy, onSnapshot, writeBatch, where } from '@angular/fire/firestore';
-import { Observable, Subscription, BehaviorSubject } from 'rxjs';
-import { Unsubscribe } from 'firebase/auth';
+import { SharedListService, SharedList } from './shared-list.service';
+import { SupabaseService } from './supabase.service';
+import { BehaviorSubject } from 'rxjs';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TarefaService {
   private readonly STORAGE_KEY = 'tarefaCollection';
-  private readonly FIREBASE_COLLECTION = 'listaCompras';
   codMostrar: boolean = false;
-
-  private firestoreSubscription?: Unsubscribe;
-  private isUpdatingFromFirestore = false;
 
   private listaAtualizada$ = new BehaviorSubject<any[]>([]);
   public lista$ = this.listaAtualizada$.asObservable();
 
+  private currentList: SharedList | null = null;
+  private items: any[] = [];
+  private channel?: RealtimeChannel;
+
   constructor(
     private historicoService: HistoricoService,
     private catalogoService: CatalogoService,
-    private firestore: Firestore,
+    private supabaseService: SupabaseService,
     private authService: AuthService,
     private sharedListService: SharedListService
-  ) { 
-    this.sharedListService.loadCurrentList();
-    
-    this.sharedListService.currentList$.subscribe(() => {
-      this.iniciarSincronizacao();
-      this.clearLocalCollection();
-      
-      // 🔧 FIX: Emitir lista atual ao trocar
-      const lista = this.getCollection();
-      this.listaAtualizada$.next(lista);
-    });
-    
-    this.iniciarSincronizacao();
-  }
-
-  private iniciarSincronizacao() {
-    if (this.firestoreSubscription) {
-      this.firestoreSubscription();
-    }
-
-    const currentList = this.sharedListService.getCurrentList();
-    if (!currentList) {
-      console.warn('⚠️ Nenhuma lista selecionada');
-      this.listaAtualizada$.next([]);
-      return;
-    }
-
-    // 🔧 FIX: Se for lista pessoal, não sincronizar com Firebase
-    if (this.sharedListService.isPersonalList(currentList)) {
-      console.log('✅ Lista pessoal - modo offline');
-      const lista = this.getCollection();
-      this.listaAtualizada$.next(lista);
-      return;
-    }
-
-    // Lista compartilhada - sincronizar com Firebase
-    const user = this.authService.getCurrentUser();
-    if (!user) {
-      console.warn('⚠️ Usuário não autenticado');
-      this.listaAtualizada$.next([]);
-      return;
-    }
-
-    if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
-      console.warn('⚠️ Você não tem acesso a esta lista');
-      this.listaAtualizada$.next([]);
-      return;
-    }
-
-    const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
-    
-    const q = query(
-      listaRef, 
-      where('listaId', '==', currentList.id),
-      orderBy('codigo', 'asc')
-    );
-
-    this.firestoreSubscription = onSnapshot(q, (snapshot) => {
-      if (this.isUpdatingFromFirestore) return;
-
-      const itensFirestore = snapshot.docs.map(doc => ({
-        firebaseId: doc.id,
-        ...doc.data()
-      }));
-
-      this.isUpdatingFromFirestore = true;
-      this.saveCollection(itensFirestore);
-      this.listaAtualizada$.next(itensFirestore);
-      this.isUpdatingFromFirestore = false;
-      
-      console.log('✅ Lista compartilhada sincronizada:', itensFirestore.length, 'itens');
-    }, (error) => {
-      console.error('❌ Erro ao sincronizar lista:', error);
-      
-      if (error.code === 'failed-precondition') {
-        console.error('⚠️ ERRO DE ÍNDICE: Crie um índice composto no Firestore');
-        console.error('   Collection: listaCompras');
-        console.error('   Fields: listaId (Ascending), codigo (Ascending)');
-      }
+  ) {
+    this.sharedListService.currentList$.subscribe(list => {
+      this.currentList = list;
+      this.onListChanged();
     });
   }
 
-  async salvar(tarefa: any, callback = null) {
-    const currentList = this.sharedListService.getCurrentList();
-    
-    if (!currentList) {
-      throw new Error('Nenhuma lista selecionada');
-    }
-    
-    let collections = this.getCollection();
-    
-    if (collections.length > 0) {
-      const ultimoItem = collections[collections.length - 1];
-      tarefa.codigo = ultimoItem.codigo + 1;
-    } else {
-      tarefa.codigo = 1;
+  private get db() {
+    return this.supabaseService.client;
+  }
+
+  // ------------------------------------------------------------------
+  // Ciclo de vida / sincronização
+  // ------------------------------------------------------------------
+
+  private onListChanged(): void {
+    this.teardownChannel();
+
+    if (!this.currentList || !this.supabaseService.isConfigured) {
+      this.items = [];
+      this.listaAtualizada$.next([]);
+      return;
     }
 
-    tarefa.listaId = currentList.id;
-    
-    // 🔧 FIX: Adicionar dados do usuário apenas se estiver autenticado
+    // Paint instantâneo a partir do cache local, depois busca do servidor.
+    this.items = this.readCache();
+    this.listaAtualizada$.next([...this.items]);
+
+    this.loadItems();
+    this.subscribeRealtime(this.currentList.id);
+  }
+
+  private async loadItems(): Promise<void> {
+    if (!this.currentList) return;
+    const { data, error } = await this.db
+      .from('list_items')
+      .select('*')
+      .eq('list_id', this.currentList.id)
+      .order('codigo', { ascending: true });
+
+    if (error) {
+      console.error('❌ Erro ao carregar itens:', error.message);
+      return;
+    }
+
+    this.items = (data || []).map(row => this.mapItem(row));
+    this.writeCache(this.items);
+    this.codMostrar = this.items.some(i => i.tarefa != null);
+    this.listaAtualizada$.next([...this.items]);
+  }
+
+  private subscribeRealtime(listId: string): void {
+    this.channel = this.db
+      .channel(`list_items:${listId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'list_items', filter: `list_id=eq.${listId}` },
+        () => this.loadItems()
+      )
+      .subscribe();
+  }
+
+  private teardownChannel(): void {
+    if (this.channel) {
+      this.db.removeChannel(this.channel);
+      this.channel = undefined;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // CRUD
+  // ------------------------------------------------------------------
+
+  async salvar(tarefa: any, callback: (() => void) | null = null) {
+    if (!this.currentList) throw new Error('Nenhuma lista selecionada');
     const user = this.authService.getCurrentUser();
-    if (user) {
-      tarefa.criadoPor = user.uid;
-    }
-    tarefa.criadoEm = new Date().toISOString();
 
-    collections.push(tarefa);
-    this.saveCollection(collections);
-    this.listaAtualizada$.next([...collections]);
+    // codigo = maior existente + 1 (robusto a exclusões, diferente do length antigo).
+    const maxCodigo = this.items.reduce((max, i) => Math.max(max, i.codigo || 0), 0);
+    const novo = {
+      list_id: this.currentList.id,
+      codigo: maxCodigo + 1,
+      tarefa: tarefa.tarefa,
+      quantidade: this.toNumber(tarefa.quantidade),
+      valor_unitario: this.toNumber(tarefa.valorUnitario),
+      feito: tarefa.feito ?? false,
+      categoria: this.classificarItem(tarefa.tarefa),
+      criado_por: user?.uid ?? null
+    };
 
-    // 🔧 FIX: Sincronizar com Firebase apenas se for lista compartilhada
-    if (!this.sharedListService.isPersonalList(currentList)) {
-      if (!user) {
-        console.warn('⚠️ Usuário não autenticado - item não será sincronizado');
-      } else if (!this.sharedListService.userHasAccess(currentList, user.uid)) {
-        throw new Error('Você não tem permissão para adicionar itens nesta lista');
-      } else {
-        try {
-          const listaRef = collection(this.firestore, this.FIREBASE_COLLECTION);
-          const docRef = await addDoc(listaRef, tarefa);
-          
-          tarefa.firebaseId = docRef.id;
-          const index = collections.findIndex(item => item.codigo === tarefa.codigo);
-          if (index !== -1) {
-            collections[index] = tarefa;
-            this.saveCollection(collections);
-            this.listaAtualizada$.next([...collections]);
-          }
-          
-          console.log('✅ Item salvo no Firebase:', docRef.id);
-        } catch (error) {
-          console.error('❌ Erro ao salvar no Firebase:', error);
-        }
-      }
-    } else {
-      console.log('✅ Item salvo localmente (lista pessoal)');
-    }
+    // Otimista: mostra já na UI.
+    const optimistic = this.mapItem({ ...novo, id: 'temp_' + Date.now(), criado_em: new Date().toISOString() });
+    this.items = [...this.items, optimistic];
+    this.listaAtualizada$.next([...this.items]);
 
-    if (callback != null) {
-      callback(); 
-    }
+    const { error } = await this.db.from('list_items').insert(novo);
+    if (error) console.error('❌ Erro ao salvar item:', error.message);
+    await this.loadItems();
+
+    if (callback) callback();
   }
 
-  listar() {
-    const collection = this.getCollection();
-    this.codMostrar = collection.some(item => item.tarefa != null);
-    return collection;
+  async excluir(tarefa: any, callback: (() => void) | null = null) {
+    this.items = this.items.filter(i => i.codigo !== tarefa.codigo);
+    this.listaAtualizada$.next([...this.items]);
+
+    if (tarefa.id) {
+      const { error } = await this.db.from('list_items').delete().eq('id', tarefa.id);
+      if (error) console.error('❌ Erro ao excluir item:', error.message);
+    }
+    await this.loadItems();
+    if (callback) callback();
   }
 
-  excluir(tarefa: any, callback = null) {
-    let collection = this.getCollection();
-    
-    const resultCollection = collection.filter(item => 
-      item.codigo !== tarefa.codigo
-    );
-
-    this.saveCollection(resultCollection);
-    this.listaAtualizada$.next([...resultCollection]);
-
-    // 🔧 FIX: Excluir do Firebase apenas se for lista compartilhada
-    const currentList = this.sharedListService.getCurrentList();
-    if (currentList && !this.sharedListService.isPersonalList(currentList) && tarefa.firebaseId) {
-      try {
-        const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
-        deleteDoc(docRef);
-        console.log('✅ Item excluído do Firebase');
-      } catch (error) {
-        console.error('❌ Erro ao excluir do Firebase:', error);
-      }
+  async atualizar(tarefa: any, callback: (() => void) | null = null) {
+    const idx = this.items.findIndex(i => i.codigo === tarefa.codigo);
+    if (idx !== -1) {
+      this.items[idx] = { ...this.items[idx], ...tarefa };
+      this.listaAtualizada$.next([...this.items]);
     }
 
-    if (callback != null) {
-      callback();
+    if (tarefa.id) {
+      const { error } = await this.db.from('list_items').update({
+        feito: tarefa.feito,
+        valor_unitario: this.toNumber(tarefa.valorUnitario),
+        quantidade: this.toNumber(tarefa.quantidade)
+      }).eq('id', tarefa.id);
+      if (error) console.error('❌ Erro ao atualizar item:', error.message);
     }
+    await this.loadItems();
+    if (callback) callback();
   }
 
-  atualizar(tarefa: any, callback = null) {
-    let collection = this.getCollection();
-    
-    const itemIndex = collection.findIndex(item => item.codigo === tarefa.codigo);
-    if (itemIndex !== -1) {
-      collection[itemIndex] = { ...collection[itemIndex], ...tarefa };
-      this.saveCollection(collection);
-      this.listaAtualizada$.next([...collection]);
-    }
+  async edicao(tarefa: any, callback: (() => void) | null = null) {
+    const idx = this.items.findIndex(i => i.codigo === tarefa.codigo);
+    if (idx === -1) { if (callback) callback(); return; }
 
-    // 🔧 FIX: Atualizar no Firebase apenas se for lista compartilhada
-    const currentList = this.sharedListService.getCurrentList();
-    if (currentList && !this.sharedListService.isPersonalList(currentList) && tarefa.firebaseId) {
-      try {
-        const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, tarefa.firebaseId);
-        updateDoc(docRef, {
-          feito: tarefa.feito,
-          valorUnitario: tarefa.valorUnitario,
-          quantidade: tarefa.quantidade,
-          atualizadoEm: new Date().toISOString()
-        });
-        console.log('✅ Item atualizado no Firebase');
-      } catch (error) {
-        console.error('❌ Erro ao atualizar no Firebase:', error);
-      }
-    }
+    const item = this.items[idx];
+    const patch: any = {};
+    if (tarefa.tarefa && tarefa.tarefa.trim() !== '') patch.tarefa = tarefa.tarefa;
+    if (tarefa.quantidade != null && tarefa.quantidade !== '') patch.quantidade = this.toNumber(tarefa.quantidade);
+    if (tarefa.valorUnitario != null && tarefa.valorUnitario !== '') patch.valor_unitario = this.toNumber(tarefa.valorUnitario);
 
-    if (callback != null) {
-      callback();
+    this.items[idx] = {
+      ...item,
+      tarefa: patch.tarefa ?? item.tarefa,
+      quantidade: patch.quantidade ?? item.quantidade,
+      valorUnitario: patch.valor_unitario ?? item.valorUnitario
+    };
+    this.listaAtualizada$.next([...this.items]);
+
+    if (item.id) {
+      const { error } = await this.db.from('list_items').update(patch).eq('id', item.id);
+      if (error) console.error('❌ Erro ao editar item:', error.message);
     }
+    await this.loadItems();
+    if (callback) callback();
   }
 
-  edicao(tarefa: any, callback = null) {
-    let collection = this.getCollection();
-    
-    const itemIndex = collection.findIndex(item => item.codigo === tarefa.codigo);
-    if (itemIndex !== -1) {
-      if (tarefa.tarefa && tarefa.tarefa.trim() !== '') {
-        collection[itemIndex].tarefa = tarefa.tarefa;
-      }
-      
-      if (tarefa.quantidade != null && tarefa.quantidade !== '') {
-        collection[itemIndex].quantidade = tarefa.quantidade;
-      }
-      
-      if (tarefa.valorUnitario != null && tarefa.valorUnitario !== '') {
-        collection[itemIndex].valorUnitario = tarefa.valorUnitario;
-      }
-      
-      this.saveCollection(collection);
-      this.listaAtualizada$.next([...collection]);
+  async excluirTodos(callback: (() => void) | null = null) {
+    if (this.currentList) {
+      const { error } = await this.db.from('list_items').delete().eq('list_id', this.currentList.id);
+      if (error) console.error('❌ Erro ao excluir todos:', error.message);
     }
-
-    if (callback != null) {
-      callback();
-    }
-  }
-
-  calcularTotalGeral(): number {
-    const collection = this.getCollection();
-    return collection.reduce((total, item) => {
-      const quantidade = parseFloat(item.quantidade) || 0;
-      const valorUnitario = parseFloat(item.valorUnitario) || 0;
-      return total + (quantidade * valorUnitario);
-    }, 0);
-  }
-
-  calcularTotalComprado(): number {
-    const collection = this.getCollection();
-    return collection
-      .filter(item => item.feito === true)
-      .reduce((total, item) => {
-        const quantidade = parseFloat(item.quantidade) || 0;
-        const valorUnitario = parseFloat(item.valorUnitario) || 0;
-        return total + (quantidade * valorUnitario);
-      }, 0);
-  }
-
-  async excluirTodos(callback = null) {
-    const collection = this.getCollection();
-    
-    // 🔧 FIX: Excluir do Firebase apenas se for lista compartilhada
-    const currentList = this.sharedListService.getCurrentList();
-    if (currentList && !this.sharedListService.isPersonalList(currentList)) {
-      await this.excluirTodosDoFirebase(collection);
-    }
-
-    this.saveCollection([]);
+    this.items = [];
+    this.writeCache([]);
     this.listaAtualizada$.next([]);
-
-    if (callback != null) {
-      callback();
-    }
-  }
-
-  private getCollection(): any[] {
-    const currentList = this.sharedListService.getCurrentList();
-    const storageKey = currentList ? `${this.STORAGE_KEY}_${currentList.id}` : this.STORAGE_KEY;
-    
-    const value = localStorage.getItem(storageKey);
-    
-    if (value == null || value == undefined) {
-      return [];
-    }
-    
-    try {
-      const collection = JSON.parse(value);
-      return Array.isArray(collection) ? collection : [];
-    } catch (error) {
-      console.error('Erro ao parsear dados do localStorage:', error);
-      return [];
-    }
-  }
-
-  private saveCollection(collection: any[]): void {
-    const currentList = this.sharedListService.getCurrentList();
-    const storageKey = currentList ? `${this.STORAGE_KEY}_${currentList.id}` : this.STORAGE_KEY;
-    localStorage.setItem(storageKey, JSON.stringify(collection));
-  }
-
-  private clearLocalCollection(): void {
-    const currentList = this.sharedListService.getCurrentList();
-    if (currentList) {
-      const storageKey = `${this.STORAGE_KEY}_${currentList.id}`;
-    }
-  }
-
-  isListEmpty(): boolean {
-    return this.getCollection().length === 0;
-  }
-
-  isListaCompleta(): boolean {
-    const collection = this.getCollection();
-    if (collection.length === 0) return false;
-    return collection.every(item => item.feito === true);
+    if (callback) callback();
   }
 
   async arquivarListaAtual(nomeCustomizado?: string): Promise<any> {
-    const collection = this.getCollection();
-    const itensParaArquivar: ItemCompra[] = collection.map(item => ({
+    const itensParaArquivar: ItemCompra[] = this.items.map(item => ({
       codigo: item.codigo,
       tarefa: item.tarefa,
-      quantidade: parseFloat(item.quantidade) || 0,
-      valorUnitario: parseFloat(item.valorUnitario) || 0,
+      quantidade: this.toNumber(item.quantidade),
+      valorUnitario: this.toNumber(item.valorUnitario),
       feito: item.feito,
-      categoria: this.classificarItem(item.tarefa)
+      categoria: item.categoria || this.classificarItem(item.tarefa)
     }));
 
-    const listaArquivada = this.historicoService.arquivarListaAtual(itensParaArquivar, nomeCustomizado);
-    
-    // 🔧 FIX: Excluir do Firebase apenas se for lista compartilhada
-    const currentList = this.sharedListService.getCurrentList();
-    if (currentList && !this.sharedListService.isPersonalList(currentList)) {
-      await this.excluirTodosDoFirebase(collection);
-    }
-    
-    this.saveCollection([]);
-    this.listaAtualizada$.next([]);
-    
+    const listaArquivada = await this.historicoService.arquivarListaAtual(itensParaArquivar, nomeCustomizado);
+    await this.excluirTodos();
     return listaArquivada;
   }
 
-  private async excluirTodosDoFirebase(itens: any[]): Promise<void> {
-    if (itens.length === 0) return;
-  
+  // ------------------------------------------------------------------
+  // Leitura / cálculos
+  // ------------------------------------------------------------------
+
+  listar() {
+    this.codMostrar = this.items.some(item => item.tarefa != null);
+    return this.items;
+  }
+
+  calcularTotalGeral(): number {
+    return this.items.reduce((total, item) =>
+      total + this.toNumber(item.quantidade) * this.toNumber(item.valorUnitario), 0);
+  }
+
+  calcularTotalComprado(): number {
+    return this.items
+      .filter(item => item.feito === true)
+      .reduce((total, item) =>
+        total + this.toNumber(item.quantidade) * this.toNumber(item.valorUnitario), 0);
+  }
+
+  isListEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  isListaCompleta(): boolean {
+    if (this.items.length === 0) return false;
+    return this.items.every(item => item.feito === true);
+  }
+
+  // ------------------------------------------------------------------
+  // Helpers
+  // ------------------------------------------------------------------
+
+  private mapItem(row: any): any {
+    return {
+      id: row.id,
+      codigo: row.codigo,
+      tarefa: row.tarefa,
+      quantidade: this.toNumber(row.quantidade),
+      valorUnitario: this.toNumber(row.valor_unitario ?? row.valorUnitario),
+      feito: row.feito,
+      categoria: row.categoria,
+      criadoPor: row.criado_por,
+      criadoEm: row.criado_em
+    };
+  }
+
+  private toNumber(v: any): number {
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+
+  private cacheKey(): string {
+    return this.currentList ? `${this.STORAGE_KEY}_${this.currentList.id}` : this.STORAGE_KEY;
+  }
+
+  private readCache(): any[] {
     try {
-      this.isUpdatingFromFirestore = true;
-  
-      const batch = writeBatch(this.firestore);
-      
-      itens.forEach(item => {
-        if (item.firebaseId) {
-          const docRef = doc(this.firestore, this.FIREBASE_COLLECTION, item.firebaseId);
-          batch.delete(docRef);
-        }
-      });
-  
-      await batch.commit();
-      console.log('✅ Todos os itens excluídos do Firebase');
-      
-      setTimeout(() => {
-        this.isUpdatingFromFirestore = false;
-      }, 500);
-      
-    } catch (error) {
-      console.error('❌ Erro ao excluir itens do Firebase:', error);
-      this.isUpdatingFromFirestore = false;
-      throw error;
+      const raw = localStorage.getItem(this.cacheKey());
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
     }
+  }
+
+  private writeCache(items: any[]): void {
+    localStorage.setItem(this.cacheKey(), JSON.stringify(items));
   }
 
   private classificarItem(nomeItem: string): string {
@@ -403,28 +290,14 @@ export class TarefaService {
       const categoria = this.catalogoService.obterCategoriaPorId(produto.categoria);
       return categoria?.nome || 'Outros';
     }
-    
-    const item = nomeItem.toLowerCase();
-    
-    if (/pão|leite|ovo|queijo|manteiga|iogurte|cream|nata/.test(item)) {
-      return 'Laticínios & Padaria';
-    }
-    if (/carne|frango|peixe|linguiça|salsicha|presunto/.test(item)) {
-      return 'Carnes & Proteínas';
-    }
-    if (/maçã|banana|laranja|uva|fruta|tomate|alface|cebola|batata/.test(item)) {
-      return 'Frutas & Verduras';
-    }
-    if (/arroz|feijão|macarrão|açúcar|sal|óleo|farinha/.test(item)) {
-      return 'Grãos & Básicos';
-    }
-    if (/sabonete|shampoo|pasta|escova|papel|detergente|amaciante/.test(item)) {
-      return 'Higiene Pessoal';
-    }
-    if (/refrigerante|suco|água|cerveja|vinho|café/.test(item)) {
-      return 'Bebidas';
-    }
-    
+
+    const item = (nomeItem || '').toLowerCase();
+    if (/pão|leite|ovo|queijo|manteiga|iogurte|cream|nata/.test(item)) return 'Laticínios & Padaria';
+    if (/carne|frango|peixe|linguiça|salsicha|presunto/.test(item)) return 'Carnes & Proteínas';
+    if (/maçã|banana|laranja|uva|fruta|tomate|alface|cebola|batata/.test(item)) return 'Frutas & Verduras';
+    if (/arroz|feijão|macarrão|açúcar|sal|óleo|farinha/.test(item)) return 'Grãos & Básicos';
+    if (/sabonete|shampoo|pasta|escova|papel|detergente|amaciante/.test(item)) return 'Higiene Pessoal';
+    if (/refrigerante|suco|água|cerveja|vinho|café/.test(item)) return 'Bebidas';
     return 'Outros';
   }
 }

@@ -1,0 +1,61 @@
+<ion-header class="modal-header">
+  <ion-toolbar>
+    <ion-title>Favoritos & Rápidos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon name="close" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="favoritos-content">
+  <div class="filtros">
+    <ion-segment [(ngModel)]="segmento" (ionChange)="onSegmentChange()" mode="ios">
+      <ion-segment-button value="favoritos">
+        <ion-icon name="star"></ion-icon>
+        <ion-label>Favoritos</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="usados">
+        <ion-icon name="repeat"></ion-icon>
+        <ion-label>Mais usados</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="todos">
+        <ion-icon name="grid"></ion-icon>
+        <ion-label>Todos</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <ion-searchbar
+      [(ngModel)]="termoBusca"
+      (ionInput)="atualizar()"
+      placeholder="Buscar produto..."
+      mode="ios">
+    </ion-searchbar>
+  </div>
+
+  <div *ngIf="produtos.length === 0" class="empty">
+    <ion-icon name="sparkles-outline"></ion-icon>
+    <p>Nada por aqui ainda. Marque produtos como favoritos ⭐ para tê-los à mão.</p>
+  </div>
+
+  <ion-list lines="none" class="produtos">
+    <ion-item *ngFor="let p of produtos" button detail="false" (click)="adicionar(p)" class="produto-item">
+      <ion-icon
+        slot="start"
+        class="fav-star"
+        [name]="p.favorito ? 'star' : 'star-outline'"
+        [class.ativo]="p.favorito"
+        (click)="toggleFavorito(p, $event)">
+      </ion-icon>
+      <ion-label>
+        <h2>{{ p.nome }}</h2>
+        <p>
+          <span *ngIf="p.precoMedio">~ R$ {{ p.precoMedio | number:'1.2-2' }}</span>
+          <span *ngIf="p.vezesUsado > 0" class="usos"> · usado {{ p.vezesUsado }}x</span>
+        </p>
+      </ion-label>
+      <ion-icon slot="end" name="add-circle" color="primary" class="add-icon"></ion-icon>
+    </ion-item>
+  </ion-list>
+</ion-content>
