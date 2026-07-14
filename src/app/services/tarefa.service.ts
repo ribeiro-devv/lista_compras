@@ -4,6 +4,7 @@ import { CatalogoService } from './catalogo.service';
 import { AuthService } from './auth.service';
 import { SharedListService, SharedList } from './shared-list.service';
 import { SupabaseService } from './supabase.service';
+import { PrecoService } from './preco.service';
 import { BehaviorSubject } from 'rxjs';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -26,7 +27,8 @@ export class TarefaService {
     private catalogoService: CatalogoService,
     private supabaseService: SupabaseService,
     private authService: AuthService,
-    private sharedListService: SharedListService
+    private sharedListService: SharedListService,
+    private precoService: PrecoService
   ) {
     this.sharedListService.currentList$.subscribe(list => {
       this.currentList = list;
@@ -124,6 +126,10 @@ export class TarefaService {
 
     const { error } = await this.db.from('list_items').insert(novo);
     if (error) console.error('❌ Erro ao salvar item:', error.message);
+
+    // Aprende o preço se veio com valor.
+    if (novo.valor_unitario > 0) this.precoService.registrar(novo.tarefa, novo.valor_unitario);
+
     await this.loadItems();
 
     if (callback) callback();
@@ -156,6 +162,11 @@ export class TarefaService {
       }).eq('id', tarefa.id);
       if (error) console.error('❌ Erro ao atualizar item:', error.message);
     }
+
+    // Aprende o preço se o item ganhou valor.
+    const valor = this.toNumber(tarefa.valorUnitario);
+    if (valor > 0 && tarefa.tarefa) this.precoService.registrar(tarefa.tarefa, valor);
+
     await this.loadItems();
     if (callback) callback();
   }
@@ -182,6 +193,12 @@ export class TarefaService {
       const { error } = await this.db.from('list_items').update(patch).eq('id', item.id);
       if (error) console.error('❌ Erro ao editar item:', error.message);
     }
+
+    // Aprende o preço se foi editado.
+    if (patch.valor_unitario > 0) {
+      this.precoService.registrar(patch.tarefa ?? item.tarefa, patch.valor_unitario);
+    }
+
     await this.loadItems();
     if (callback) callback();
   }

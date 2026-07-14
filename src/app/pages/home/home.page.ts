@@ -14,6 +14,8 @@ import { FavoritosModalComponent } from 'src/app/components/favoritos-modal/favo
 import { ManageListsModalComponent } from 'src/app/components/manage-lists-modal/manage-lists-modal.component';
 import { SharedListService, SharedList } from 'src/app/services/shared-list.service';
 import { CatalogoService, ProdutoCatalogo } from 'src/app/services/catalogo.service';
+import { PrecoService } from 'src/app/services/preco.service';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -31,6 +33,10 @@ export class HomePage implements OnInit, OnDestroy {
   sugestoes: ProdutoCatalogo[] = [];
   mostrarSugestoes = false;
 
+  // Derivados memoizados (recalculados só quando a lista muda) — evita flicker
+  itensAgrupados: Array<{ categoria: string; itens: any[] }> = [];
+  progresso = { comprados: 0, total: 0, percent: 0 };
+
   private listaSubscription?: Subscription;
   private currentListSubscription?: Subscription;
 
@@ -43,13 +49,15 @@ export class HomePage implements OnInit, OnDestroy {
     public tourService: TourService,
     private utilsService: UtilsService,
     private sharedListService: SharedListService,
-    private catalogoService: CatalogoService
+    private catalogoService: CatalogoService,
+    private precoService: PrecoService,
+    private toastCtrl: ToastController
   ) { }
 
   ngOnInit() {
     this.listaSubscription = this.tarefaService.lista$.subscribe(lista => {
-      console.log('🔔 HomePage recebeu atualização da lista:', lista.length, 'itens');
       this.tarefaCollection = lista;
+      this.recomputar();
     });
 
     // 🔧 FIX: Observar mudanças na lista atual
@@ -112,10 +120,36 @@ export class HomePage implements OnInit, OnDestroy {
 
   listarTarefa() {
     this.tarefaCollection = this.tarefaService.listar();
+    this.recomputar();
   }
 
   trackByFn(index: number, item: any) {
     return item.codigo ? item.codigo : index;
+  }
+
+  trackByCategoria(index: number, grupo: { categoria: string }) {
+    return grupo.categoria;
+  }
+
+  /** Recalcula agrupamento + progresso só quando a lista muda (evita flicker). */
+  private recomputar() {
+    const grupos = new Map<string, any[]>();
+    for (const item of this.tarefaCollection) {
+      const cat = item.categoria || 'Outros';
+      if (!grupos.has(cat)) grupos.set(cat, []);
+      grupos.get(cat)!.push(item);
+    }
+    this.itensAgrupados = Array.from(grupos.entries())
+      .map(([categoria, itens]) => ({
+        categoria,
+        // Pendentes primeiro; comprados descem para o fim.
+        itens: itens.sort((a, b) => (a.feito === b.feito ? 0 : a.feito ? 1 : -1))
+      }))
+      .sort((a, b) => a.categoria.localeCompare(b.categoria));
+
+    const total = this.tarefaCollection.length;
+    const comprados = this.tarefaCollection.filter(i => i.feito).length;
+    this.progresso = { comprados, total, percent: total > 0 ? comprados / total : 0 };
   }
 
   // ---------- Adição rápida + autocomplete ----------
@@ -143,10 +177,13 @@ export class HomePage implements OnInit, OnDestroy {
       this.catalogoService.registrarUso(produto.id);
     }
 
+    // Preço sugerido: prefere o SEU último preço; senão o estimado do catálogo.
+    const valor = this.precoService.obterPreco(nome) ?? (produto?.precoMedio || 0);
+
     await this.tarefaService.salvar({
       tarefa: nome,
       quantidade: 1,
-      valorUnitario: produto?.precoMedio || 0,
+      valorUnitario: valor,
       feito: false
     });
 
@@ -155,32 +192,59 @@ export class HomePage implements OnInit, OnDestroy {
     this.mostrarSugestoes = false;
   }
 
+  /** Preço a exibir na sugestão: o seu último preço, ou o estimado do catálogo. */
+  precoSugestao(produto: ProdutoCatalogo): number {
+    return this.precoService.obterPreco(produto.nome) ?? (produto.precoMedio || 0);
+  }
+
+  /** True quando o preço mostrado é o do próprio usuário (não o estimado). */
+  ehMeuPreco(produto: ProdutoCatalogo): boolean {
+    return this.precoService.obterPreco(produto.nome) != null;
+  }
+
   // ---------- Marcar comprado com 1 toque ----------
-  toggleComprado(item: any, ev: Event) {
+  async toggleComprado(item: any, ev: Event) {
     ev.stopPropagation();
     item.feito = !item.feito;
     this.tarefaService.atualizar(item);
+    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
   }
 
-  // ---------- Progresso ----------
-  getProgresso(): { comprados: number; total: number; percent: number } {
-    const total = this.tarefaCollection.length;
-    const comprados = this.tarefaCollection.filter(i => i.feito).length;
-    const percent = total > 0 ? comprados / total : 0;
-    return { comprados, total, percent };
+  // ---------- Stepper de quantidade ----------
+  alterarQuantidade(item: any, delta: number, ev: Event) {
+    ev.stopPropagation();
+    const atual = parseFloat(item.quantidade) || 0;
+    const nova = Math.max(1, atual + delta);
+    if (nova === atual) return;
+    item.quantidade = nova;
+    this.tarefaService.atualizar(item);
   }
 
-  // ---------- Agrupamento por categoria ----------
-  get itensAgrupados(): Array<{ categoria: string; itens: any[] }> {
-    const grupos = new Map<string, any[]>();
-    for (const item of this.tarefaCollection) {
-      const cat = item.categoria || 'Outros';
-      if (!grupos.has(cat)) grupos.set(cat, []);
-      grupos.get(cat)!.push(item);
-    }
-    return Array.from(grupos.entries())
-      .map(([categoria, itens]) => ({ categoria, itens }))
-      .sort((a, b) => a.categoria.localeCompare(b.categoria));
+  // ---------- Excluir com desfazer ----------
+  async excluirComUndo(item: any, ev?: Event) {
+    if (ev) ev.stopPropagation();
+    const backup = { ...item };
+    this.tarefaService.excluir(item);
+
+    const toast = await this.toastCtrl.create({
+      message: `"${backup.tarefa}" removido`,
+      duration: 4000,
+      position: 'bottom',
+      color: 'dark',
+      buttons: [{
+        text: 'Desfazer',
+        role: 'cancel',
+        handler: () => {
+          this.tarefaService.salvar({
+            tarefa: backup.tarefa,
+            quantidade: backup.quantidade,
+            valorUnitario: backup.valorUnitario,
+            feito: backup.feito
+          });
+        }
+      }]
+    });
+    await toast.present();
   }
 
   getCategoriaIcon(categoria: string): string {

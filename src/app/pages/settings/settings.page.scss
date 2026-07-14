@@ -133,3 +133,47 @@ ion-card {
 .profile-card ion-button {
   --border-radius: var(--app-radius-sm);
 }
+
+// Seletor de cor do app
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 4px 0;
+
+  .swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--app-shadow-sm);
+    transition: transform 0.15s ease;
+    position: relative;
+
+    ion-icon {
+      color: #fff;
+      font-size: 1.2rem;
+    }
+
+    &:active { transform: scale(0.9); }
+
+    &.ativo {
+      box-shadow: 0 0 0 3px var(--ion-background-color), 0 0 0 5px currentColor;
+    }
+
+    &.custom {
+      border: 2px dashed rgba(var(--ion-color-medium-rgb), 0.6);
+
+      input[type="color"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+    }
+  }
+}

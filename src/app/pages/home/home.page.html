@@ -121,7 +121,9 @@
       <button class="qa-suggestion" *ngFor="let s of sugestoes" (mousedown)="adicionarRapido(s)">
         <ion-icon [name]="s.favorito ? 'star' : 'pricetag-outline'" [class.fav]="s.favorito"></ion-icon>
         <span class="qa-nome">{{ s.nome }}</span>
-        <span class="qa-preco" *ngIf="s.precoMedio">~ R$ {{ s.precoMedio | number:'1.2-2' }}</span>
+        <span class="qa-preco" *ngIf="precoSugestao(s) > 0" [class.meu]="ehMeuPreco(s)">
+          <ion-icon *ngIf="ehMeuPreco(s)" name="person" class="meu-ic"></ion-icon>{{ ehMeuPreco(s) ? '' : '~ ' }}R$ {{ precoSugestao(s) | number:'1.2-2' }}
+        </span>
       </button>
     </div>
   </div>
@@ -129,10 +131,10 @@
   <!-- Barra de progresso -->
   <div class="progress-wrap" *ngIf="tarefaCollection.length > 0">
     <div class="progress-top">
-      <span>{{ getProgresso().comprados }} de {{ getProgresso().total }} no carrinho</span>
-      <span class="progress-pct">{{ (getProgresso().percent * 100) | number:'1.0-0' }}%</span>
+      <span>{{ progresso.comprados }} de {{ progresso.total }} no carrinho</span>
+      <span class="progress-pct">{{ (progresso.percent * 100) | number:'1.0-0' }}%</span>
     </div>
-    <ion-progress-bar [value]="getProgresso().percent" color="success"></ion-progress-bar>
+    <ion-progress-bar [value]="progresso.percent" color="success"></ion-progress-bar>
   </div>
 
   <!-- Estado vazio -->
@@ -163,7 +165,7 @@
 
   <!-- Lista de produtos agrupada por categoria -->
   <div class="produtos-groups" *ngIf="tarefaCollection.length > 0">
-    <div class="categoria-grupo" *ngFor="let grupo of itensAgrupados">
+    <div class="categoria-grupo" *ngFor="let grupo of itensAgrupados; trackBy: trackByCategoria">
       <div class="categoria-header">
         <ion-icon [name]="getCategoriaIcon(grupo.categoria)"></ion-icon>
         <span>{{ grupo.categoria }}</span>
@@ -179,7 +181,6 @@
             <ion-label>
               <h2 [class.completed]="item.feito">{{ item.tarefa }}</h2>
               <div class="item-details">
-                <span class="chip-qtd">Qtd: {{ item.quantidade }}</span>
                 <span class="chip-valor" *ngIf="item.valorUnitario > 0">
                   {{ formatarMoeda(item.valorUnitario) }}
                 </span>
@@ -191,10 +192,21 @@
                 {{ item.feito ? 'No carrinho' : 'Toque no círculo p/ adicionar no carrinho' }}
               </p>
             </ion-label>
+
+            <!-- Stepper de quantidade -->
+            <div slot="end" class="qtd-stepper" (click)="$event.stopPropagation()">
+              <button class="qtd-btn" (click)="alterarQuantidade(item, -1, $event)">
+                <ion-icon name="remove"></ion-icon>
+              </button>
+              <span class="qtd-num">{{ item.quantidade }}</span>
+              <button class="qtd-btn" (click)="alterarQuantidade(item, 1, $event)">
+                <ion-icon name="add"></ion-icon>
+              </button>
+            </div>
           </ion-item>
 
           <ion-item-options side="end">
-            <ion-item-option color="danger" (click)="delete(item)">
+            <ion-item-option color="danger" (click)="excluirComUndo(item, $event)">
               <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
             </ion-item-option>
           </ion-item-options>

@@ -6,6 +6,7 @@ import { ManageListsModalComponent } from 'src/app/components/manage-lists-modal
 import { AuthService } from 'src/app/services/auth.service';
 import { SharedListService } from 'src/app/services/shared-list.service';
 import { ThemeService } from 'src/app/services/theme.service';
+import { ColorService } from 'src/app/services/color.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -40,8 +41,18 @@ export class SettingsPage implements OnInit, OnDestroy {
     private toastController: ToastController,
     private authService: AuthService,
     private sharedListService: SharedListService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    public colorService: ColorService
   ) { }
+
+  mudarCor(hex: string) {
+    this.colorService.setCor(hex);
+  }
+
+  onCorCustom(ev: any) {
+    const hex = ev?.target?.value;
+    if (hex) this.colorService.setCor(hex);
+  }
 
   ngOnInit() {
     this.loadUserData();

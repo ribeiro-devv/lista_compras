@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
+import { ColorService } from './services/color.service';
 
 @Component({
   selector: 'app-root',
@@ -9,8 +10,14 @@ import { ThemeService } from './services/theme.service';
 })
 export class AppComponent implements OnInit {
 
-  // Injetar o ThemeService no boot garante que o tema seja aplicado cedo.
-  constructor(private authService: AuthService, private themeService: ThemeService) {}
+  // Injetar Theme/Color no boot garante que tema e cor sejam aplicados cedo.
+  constructor(
+    private authService: AuthService,
+    private themeService: ThemeService,
+    private colorService: ColorService
+  ) {
+    this.colorService.init();
+  }
 
   ngOnInit() {
     // Garante a inicialização do AuthService (verifica a sessão persistida).
