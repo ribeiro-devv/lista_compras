@@ -2,13 +2,14 @@
   <h2 class="modal-title-modern">Excluir Todos</h2>
 </div>
 
-<div>
+<div class="form-modern">
   <span class="text-alert">
-    Essa ação não poderá ser disfeita
+    <ion-icon name="warning-outline" style="font-size:2rem;display:block;margin:0 auto 8px;color:var(--ion-color-danger)"></ion-icon>
+    Essa ação não poderá ser desfeita.
   </span>
 </div>
 
 <div class="modal-footer">
   <button type="button" class="modal-button-cancel" (click)="fechar()">Cancelar</button>
-  <button type="submit" class="modal-button-save" (click)="excluirTodos()">Excluir Tudo</button>
+  <button type="button" class="modal-button-danger" (click)="excluirTodos()">Excluir Tudo</button>
 </div>

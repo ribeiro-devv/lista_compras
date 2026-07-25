@@ -306,3 +306,136 @@ ion-input.is-invalid::part(native):focus {
     overflow: hidden;
   }
 }
+/* ============================================================
+   DESIGN SYSTEM DOS MODAIS (padrão único para todos)
+   ============================================================ */
+.modal-header-modern {
+  background: var(--app-gradient);
+  color: #fff;
+  text-align: center;
+  padding: 16px;
+  border-radius: var(--app-radius, 18px) var(--app-radius, 18px) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modal-title-modern {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.form-modern {
+  padding: 18px;
+}
+
+.text {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  margin: 12px 2px 6px;
+}
+
+.error-text {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ion-color-danger);
+  font-weight: 600;
+  margin: 8px 2px 4px;
+}
+
+.text-alert {
+  display: block;
+  text-align: center;
+  padding: 24px 20px;
+  color: var(--ion-color-medium);
+  font-size: 0.95rem;
+}
+
+/* Inputs padronizados dentro dos modais */
+ion-modal.add-produto-modal ion-input {
+  --background: rgba(var(--ion-color-primary-rgb), 0.05);
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --border-radius: var(--app-radius-sm, 12px);
+  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.25);
+  border-radius: var(--app-radius-sm, 12px);
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+/* Rodapé + botões padronizados */
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 18px 18px;
+}
+
+.modal-button-cancel,
+.modal-button-save,
+.modal-button-danger {
+  flex: 1;
+  border: none;
+  padding: 14px 16px;
+  border-radius: var(--app-radius-sm, 12px);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.modal-button-cancel {
+  background: rgba(var(--ion-color-medium-rgb), 0.15);
+  color: var(--ion-text-color);
+}
+
+.modal-button-save {
+  background: var(--app-gradient);
+  color: #fff;
+  box-shadow: var(--app-shadow);
+}
+
+.modal-button-save:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.modal-button-danger {
+  background: var(--ion-color-danger);
+  color: #fff;
+}
+
+.modal-button-cancel:active,
+.modal-button-save:active:not(:disabled),
+.modal-button-danger:active {
+  transform: scale(0.97);
+}
+
+/* Detalhes do produto */
+.form-modern .title {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ion-color-medium);
+  font-weight: 700;
+}
+
+.detail-text {
+  margin: 2px 2px 12px;
+  font-size: 1rem;
+  color: var(--ion-text-color);
+}
+
+.detail-total {
+  margin: 2px 2px 12px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--ion-color-primary);
+}

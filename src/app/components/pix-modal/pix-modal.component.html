@@ -1,20 +1,14 @@
-<div class="pix-modal">
-  <div class="pix-header">
-    <h2>Doação</h2>
-  </div>
+<div class="modal-header-modern">
+  <h2 class="modal-title-modern">Doação 🙏</h2>
+</div>
 
-  <div class="pix-body">
-    <p>Ajude a manter esse projeto no ar! 🙏</p>
-    <label>Pix:</label>
-    <input type="text" [value]="pixKey" readonly />
-  </div>
+<div class="form-modern">
+  <p class="detail-text">Ajude a manter esse projeto no ar!</p>
+  <span class="text">Chave Pix</span>
+  <ion-input class="pix-key" [value]="pixKey" readonly></ion-input>
+</div>
 
-  <div class="pix-footer">
-    <ion-button color="success" expand="block" (click)="copiarPix()">
-      Copiar chave Pix
-    </ion-button>
-    <ion-button color="danger" expand="block" (click)="fechar()">
-      Fechar
-    </ion-button>
-  </div>
-</div>  
+<div class="modal-footer">
+  <button type="button" class="modal-button-cancel" (click)="fechar()">Fechar</button>
+  <button type="button" class="modal-button-save" (click)="copiarPix()">Copiar Pix</button>
+</div>
