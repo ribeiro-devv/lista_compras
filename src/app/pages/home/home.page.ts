@@ -205,9 +205,25 @@ export class HomePage implements OnInit, OnDestroy {
   // ---------- Marcar comprado com 1 toque ----------
   async toggleComprado(item: any, ev: Event) {
     ev.stopPropagation();
-    item.feito = !item.feito;
-    this.tarefaService.atualizar(item);
-    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+
+    // Já no carrinho: apenas remove (direto).
+    if (item.feito) {
+      item.feito = false;
+      this.tarefaService.atualizar(item);
+      try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+      return;
+    }
+
+    // Marcar: regra do app exige quantidade E valor. Se faltar, pede antes.
+    const qtd = parseFloat(item.quantidade) || 0;
+    const valor = parseFloat(item.valorUnitario) || 0;
+    if (qtd > 0 && valor > 0) {
+      item.feito = true;
+      this.tarefaService.atualizar(item);
+      try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+    } else {
+      this.solicitarValorUnitario(item);
+    }
   }
 
   // ---------- Stepper de quantidade ----------
