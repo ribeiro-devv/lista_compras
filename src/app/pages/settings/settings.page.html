@@ -1,4 +1,4 @@
-<ion-header [translucent]="true" class="settings-header">
+<ion-header [translucent]="true" class="settings-header ion-no-border">
   <ion-toolbar class="main-toolbar">
     <ion-buttons slot="start">
       <ion-button (click)="goBack()">
@@ -10,287 +10,155 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="settings-content">
-  
-  <ion-card class="profile-card">
-    <!-- <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="person-circle" class="profile-icon"></ion-icon>
-        Perfil do Usuário
-      </ion-card-title>
-    </ion-card-header> -->
-    
-    <ion-card-content>
+  <div class="page-container">
+
+    <!-- Perfil -->
+    <div class="profile-card">
       <div class="profile-info">
         <div class="avatar-section">
           <ion-avatar class="profile-avatar">
-            <img [src]="userProfile.avatar" alt="Avatar do usuário">
+            <img [src]="userProfile.avatar" alt="Avatar">
           </ion-avatar>
-          <ion-button fill="clear" size="small" class="change-avatar-btn">
-            <ion-icon name="camera"></ion-icon>
-          </ion-button>
         </div>
-        
         <div class="user-details">
-          <h3>{{ userProfile.name }}</h3>
-          <p>{{ userProfile.email }}</p>
+          <h3>{{ userProfile.name || 'Usuário' }}</h3>
+          <p>{{ userProfile.email || 'não autenticado' }}</p>
         </div>
+        <ion-button *ngIf="isAuthenticated" fill="clear" class="logout-icon" (click)="logout()">
+          <ion-icon name="log-out-outline" slot="icon-only"></ion-icon>
+        </ion-button>
       </div>
-      
-      <ion-button expand="block" fill="outline" (click)="editProfile()">
-        <ion-icon name="create" slot="start"></ion-icon>
-        Editar Perfil
-      </ion-button>
-      
-      <!-- Botão de Logout -->
-      <ion-button 
-        *ngIf="isAuthenticated"
-        expand="block" 
-        fill="outline" 
-        color="danger"
-        (click)="logout()"
-        class="logout-btn">
-        <ion-icon name="log-out-outline" slot="start"></ion-icon>
-        Sair da Conta
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+    </div>
 
-  <!-- Lista Compartilhada Atual -->
-  <ion-card class="settings-card" *ngIf="currentList">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="list" class="settings-icon"></ion-icon>
-        Lista Compartilhada Atual
-      </ion-card-title>
-    </ion-card-header>
-    
-    <ion-card-content>
-      <div class="current-list-info">
+    <!-- Prévia -->
+    <div class="preview-card">
+      <div class="preview-chip">Prévia</div>
+      <div class="preview-balance">
+        <span>Total do carrinho</span>
+        <strong>R$ 128,90</strong>
+      </div>
+      <div class="preview-btn">Adicionar item</div>
+    </div>
+
+    <!-- Nome -->
+    <h2 class="section-title">Seu nome</h2>
+    <div class="surface-card name-field">
+      <ion-input [(ngModel)]="userProfile.name" (ionBlur)="salvarNome()"
+                 placeholder="Como quer ser chamado?" maxlength="40"></ion-input>
+    </div>
+
+    <!-- Tema -->
+    <h2 class="section-title">Tema</h2>
+    <div class="theme-modes">
+      <button class="mode" [class.active]="themeMode === 'light'" (click)="setMode('light')">
+        <ion-icon name="sunny-outline"></ion-icon><span>Claro</span>
+      </button>
+      <button class="mode" [class.active]="themeMode === 'dark'" (click)="setMode('dark')">
+        <ion-icon name="moon-outline"></ion-icon><span>Escuro</span>
+      </button>
+      <button class="mode" [class.active]="themeMode === 'system'" (click)="setMode('system')">
+        <ion-icon name="phone-portrait-outline"></ion-icon><span>Sistema</span>
+      </button>
+    </div>
+
+    <!-- Cor de destaque -->
+    <h2 class="section-title">Cor de destaque</h2>
+    <div class="color-grid surface-card">
+      <button class="swatch" *ngFor="let c of colorService.presets" [style.background]="c.hex"
+              [class.active]="colorService.ehAtual(c.hex)" (click)="mudarCor(c.hex)"
+              [attr.aria-label]="c.nome">
+        <ion-icon *ngIf="colorService.ehAtual(c.hex)" name="checkmark"></ion-icon>
+      </button>
+      <label class="swatch custom" [style.background]="colorService.getCor()" aria-label="Cor personalizada">
+        <ion-icon name="color-palette-outline"></ion-icon>
+        <input type="color" [value]="colorService.getCor()" (input)="onCorCustom($event)" />
+      </label>
+    </div>
+
+    <!-- Densidade -->
+    <h2 class="section-title">Densidade</h2>
+    <div class="theme-modes two">
+      <button class="mode" [class.active]="density === 'comfortable'" (click)="setDensity('comfortable')">
+        <ion-icon name="reorder-four-outline"></ion-icon><span>Confortável</span>
+      </button>
+      <button class="mode" [class.active]="density === 'compact'" (click)="setDensity('compact')">
+        <ion-icon name="reorder-two-outline"></ion-icon><span>Compacto</span>
+      </button>
+    </div>
+
+    <!-- Tamanho do texto -->
+    <h2 class="section-title">Tamanho do texto</h2>
+    <div class="surface-card scale-field">
+      <span class="scale-small">A</span>
+      <ion-range [ngModel]="fontScale" (ngModelChange)="setFontScale($event)"
+                 min="0.9" max="1.2" step="0.05" snaps="true" ticks="false"></ion-range>
+      <span class="scale-big">A</span>
+    </div>
+
+    <!-- Moeda e notificações -->
+    <h2 class="section-title">Preferências</h2>
+    <div class="surface-card select-list">
+      <ion-item lines="none">
+        <ion-icon name="cash-outline" slot="start" class="row-lead"></ion-icon>
+        <ion-select label="Moeda" [(ngModel)]="appSettings.currency" (ionChange)="onCurrencyChange()" interface="popover">
+          <ion-select-option *ngFor="let c of currencies" [value]="c.code">{{ c.label }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-icon name="notifications-outline" slot="start" class="row-lead"></ion-icon>
+        <ion-label>Notificações</ion-label>
+        <ion-toggle [(ngModel)]="appSettings.notifications" (ionChange)="onNotificationsToggle()" slot="end"></ion-toggle>
+      </ion-item>
+    </div>
+
+    <!-- Lista atual -->
+    <ng-container *ngIf="currentList">
+      <h2 class="section-title">Lista atual</h2>
+      <div class="surface-card current-list-info">
         <h3>{{ currentList.name }}</h3>
         <p class="list-members-info">
-          <ion-icon name="people"></ion-icon>
+          <ion-icon name="people-outline"></ion-icon>
           {{ currentList.members?.length || 1 }} membro(s)
         </p>
       </div>
-    </ion-card-content>
-  </ion-card>
+    </ng-container>
 
-  <!-- Gerenciar Listas Compartilhadas -->
-  <ion-card class="settings-card" *ngIf="isAuthenticated">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="people" class="settings-icon"></ion-icon>
-        Listas Compartilhadas
-      </ion-card-title>
-    </ion-card-header>
-    
-    <ion-card-content>
-      <ion-button expand="block" fill="solid" color="primary" (click)="manageSharedLists()">
-        <ion-icon name="people" slot="start"></ion-icon>
-        Gerenciar Listas
-      </ion-button>
-      <p class="settings-hint">
-        Compartilhe sua lista com outras pessoas e trabalhem juntos!
-      </p>
-    </ion-card-content>
-  </ion-card>
+    <!-- Compartilhamento -->
+    <h2 class="section-title" *ngIf="isAuthenticated">Compartilhamento</h2>
+    <div class="surface-card action-list" *ngIf="isAuthenticated">
+      <button class="action-row" (click)="manageSharedLists()">
+        <ion-icon name="people-outline" class="row-lead"></ion-icon>
+        <div class="action-text">
+          <strong>Gerenciar listas</strong>
+          <small>Convide pessoas e compartilhem uma lista</small>
+        </div>
+        <ion-icon name="chevron-forward" class="row-chev"></ion-icon>
+      </button>
+    </div>
 
-  <ion-card class="settings-card">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="cash-outline" class="settings-icon"></ion-icon>
-        Ajude a manter o projeto no ar!
-      </ion-card-title>
-    </ion-card-header>
-    
-    <ion-card-content>
-      <ion-button expand="block" fill="outline" (click)="showPix()">
-        <ion-icon name="create" slot="start"></ion-icon>
-        Doação
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Cor do app -->
-  <ion-card class="settings-card">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="color-palette" class="settings-icon"></ion-icon>
-        Cor do App
-      </ion-card-title>
-    </ion-card-header>
-
-    <ion-card-content>
-      <div class="color-swatches">
-        <button
-          *ngFor="let c of colorService.presets"
-          class="swatch"
-          [class.ativo]="colorService.ehAtual(c.hex)"
-          [style.background]="c.hex"
-          [attr.aria-label]="c.nome"
-          (click)="mudarCor(c.hex)">
-          <ion-icon *ngIf="colorService.ehAtual(c.hex)" name="checkmark"></ion-icon>
-        </button>
-
-        <label class="swatch custom" [style.background]="colorService.getCor()">
-          <ion-icon name="add"></ion-icon>
-          <input type="color" [value]="colorService.getCor()" (input)="onCorCustom($event)" />
-        </label>
+    <!-- Outros -->
+    <h2 class="section-title">Sobre & dados</h2>
+    <div class="surface-card action-list">
+      <button class="action-row" (click)="showPix()">
+        <ion-icon name="heart-outline" class="row-lead" style="color:var(--ion-color-danger)"></ion-icon>
+        <div class="action-text"><strong>Apoiar o projeto</strong><small>Doação via Pix</small></div>
+        <ion-icon name="chevron-forward" class="row-chev"></ion-icon>
+      </button>
+      <button class="action-row danger" (click)="clearData()">
+        <ion-icon name="trash-outline" class="row-lead" style="color:var(--ion-color-danger)"></ion-icon>
+        <div class="action-text"><strong>Limpar dados locais</strong><small>Apaga preferências deste aparelho</small></div>
+        <ion-icon name="chevron-forward" class="row-chev"></ion-icon>
+      </button>
+      <div class="action-row static">
+        <ion-icon name="code-slash-outline" class="row-lead"></ion-icon>
+        <div class="action-text"><strong>Versão</strong><small>1.0.0</small></div>
       </div>
-      <p class="settings-hint">Escolha um preset ou toque no + para uma cor personalizada.</p>
-    </ion-card-content>
-  </ion-card>
+    </div>
 
-  <!-- Seção de Configurações do App -->
-  <ion-card class="settings-card">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="settings" class="settings-icon"></ion-icon>
-        Configurações do Aplicativo
-      </ion-card-title>
-    </ion-card-header>
-    
-    <ion-card-content>
-      
-      <!-- Modo Escuro -->
-      <ion-item>
-        <ion-icon name="moon" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Modo Escuro</h3>
-          <p>Ativar tema escuro</p>
-        </ion-label>
-        <ion-toggle 
-          [(ngModel)]="appSettings.darkMode" 
-          (ionChange)="onDarkModeToggle()"
-          slot="end">
-        </ion-toggle>
-      </ion-item>
+    <ion-button *ngIf="isAuthenticated" class="btn-logout-lg" expand="block" fill="outline" color="danger" (click)="logout()">
+      <ion-icon name="log-out-outline" slot="start"></ion-icon>
+      Sair da conta
+    </ion-button>
 
-      <!-- Notificações -->
-      <ion-item>
-        <ion-icon name="notifications" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Notificações</h3>
-          <p>Receber alertas do app</p>
-        </ion-label>
-        <ion-toggle 
-          [(ngModel)]="appSettings.notifications" 
-          (ionChange)="onNotificationsToggle()"
-          slot="end">
-        </ion-toggle>
-      </ion-item>
-
-      <!-- Moeda -->
-      <ion-item>
-        <ion-icon name="card" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Moeda</h3>
-          <p>Moeda padrão do app</p>
-        </ion-label>
-        <ion-select 
-          [(ngModel)]="appSettings.currency" 
-          (ionChange)="onCurrencyChange()"
-          interface="popover"
-          slot="end">
-          <ion-select-option value="BRL">Real (R$)</ion-select-option>
-          <ion-select-option value="USD">Dólar (US$)</ion-select-option>
-          <ion-select-option value="EUR">Euro (€)</ion-select-option>
-        </ion-select>
-      </ion-item>
-
-      <!-- Idioma -->
-      <ion-item>
-        <ion-icon name="language" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Idioma</h3>
-          <p>Idioma do aplicativo</p>
-        </ion-label>
-        <ion-select 
-          [(ngModel)]="appSettings.language" 
-          interface="popover"
-          slot="end">
-          <ion-select-option value="pt-BR">Português</ion-select-option>
-          <ion-select-option value="en-US">English</ion-select-option>
-          <ion-select-option value="es-ES">Español</ion-select-option>
-        </ion-select>
-      </ion-item>
-
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Seção de Ações -->
-  <ion-card class="actions-card">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="options" class="actions-icon"></ion-icon>
-        Ações
-      </ion-card-title>
-    </ion-card-header>
-    
-    <ion-card-content>
-      
-      <!-- <ion-button expand="block" fill="outline" color="medium">
-        <ion-icon name="download" slot="start"></ion-icon>
-        Exportar Dados
-      </ion-button>
-      
-      <ion-button expand="block" fill="outline" color="medium">
-        <ion-icon name="cloud-upload" slot="start"></ion-icon>
-        Backup dos Dados
-      </ion-button> -->
-      
-      <ion-button expand="block" fill="outline" color="danger" (click)="clearData()">
-        <ion-icon name="trash" slot="start"></ion-icon>
-        Limpar Todos os Dados
-      </ion-button>
-
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Seção de Informações -->
-  <ion-card class="info-card">
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="information-circle" class="info-icon"></ion-icon>
-        Informações
-      </ion-card-title>
-    </ion-card-header>
-    
-    <ion-card-content>
-      
-      <!-- <ion-item button>
-        <ion-icon name="help-circle" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Ajuda e Suporte</h3>
-          <p>Dúvidas e suporte técnico</p>
-        </ion-label>
-      </ion-item> -->
-
-      <ion-item button>
-        <ion-icon name="document-text" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Termos de Uso</h3>
-          <p>Termos e condições de uso</p>
-        </ion-label>
-      </ion-item>
-
-      <ion-item button>
-        <ion-icon name="shield-checkmark" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Política de Privacidade</h3>
-          <p>Como tratamos seus dados</p>
-        </ion-label>
-      </ion-item>
-
-      <ion-item>
-        <ion-icon name="code" slot="start"></ion-icon>
-        <ion-label>
-          <h3>Versão do App</h3>
-          <p>v1.0.0</p>
-        </ion-label>
-      </ion-item>
-
-    </ion-card-content>
-  </ion-card>
-
+  </div>
 </ion-content>

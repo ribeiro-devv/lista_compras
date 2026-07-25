@@ -23,6 +23,22 @@
     <p class="detail-total">{{ formatarMoeda(subtotal) }}</p>
   </div>
 
+  <div class="preco-historico" *ngIf="historico.length > 0">
+    <div class="ph-head">
+      <span class="title">Histórico de preço</span>
+      <span class="ph-var" *ngIf="variacao() !== null"
+            [class.up]="(variacao() || 0) > 0" [class.down]="(variacao() || 0) < 0">
+        {{ (variacao() || 0) > 0 ? '▲' : '▼' }} {{ (variacao() || 0) | number:'1.0-0' }}%
+      </span>
+    </div>
+    <div class="ph-list">
+      <div class="ph-row" *ngFor="let h of historico; let i = index">
+        <span class="ph-data">{{ formatarData(h.data) }}</span>
+        <span class="ph-valor" [class.recente]="i === 0">{{ formatarMoeda(h.valor) }}</span>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-footer">
     <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
     <button type="button" class="modal-button-save" (click)="editar()">Editar</button>

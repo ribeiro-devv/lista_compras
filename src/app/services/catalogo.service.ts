@@ -258,6 +258,37 @@ export class CatalogoService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
+  /**
+   * Aprende com a compra: atualiza o preço do produto no catálogo com o valor
+   * realmente pago; se o produto não existe, cria (produtos novos digitados
+   * viram sugestões futuras). Também conta o uso.
+   */
+  aprender(nome: string, valor: number): void {
+    const nomeLimpo = (nome || '').trim();
+    if (!nomeLimpo) return;
+    const norm = nomeLimpo.toLowerCase();
+    const catalogo = this.obterCatalogo();
+    const existente = catalogo.find(p => p.nome.trim().toLowerCase() === norm);
+
+    if (existente) {
+      if (valor > 0) existente.precoMedio = valor;
+      existente.vezesUsado++;
+      existente.dataUltimoUso = new Date().toISOString();
+    } else {
+      catalogo.push({
+        id: this.gerarId(),
+        nome: nomeLimpo,
+        categoria: 'outros',
+        unidade: 'unidade',
+        precoMedio: valor > 0 ? valor : undefined,
+        favorito: false,
+        vezesUsado: 1,
+        dataUltimoUso: new Date().toISOString()
+      });
+    }
+    this.salvarCatalogo(catalogo);
+  }
+
   // Obter estatísticas do catálogo
   obterEstatisticas(): any {
     const catalogo = this.obterCatalogo();

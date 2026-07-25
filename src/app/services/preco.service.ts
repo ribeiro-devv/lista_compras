@@ -1,6 +1,12 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
+import { CatalogoService } from './catalogo.service';
+
+export interface PrecoHistorico {
+  valor: number;
+  data: Date;
+}
 
 /**
  * Memória de preços por usuário: guarda o ÚLTIMO preço que a pessoa pagou em
@@ -16,7 +22,8 @@ export class PrecoService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private authService: AuthService
+    private authService: AuthService,
+    private catalogoService: CatalogoService
   ) {
     this.authService.currentUser$.subscribe(user => {
       if (user) {
@@ -73,17 +80,20 @@ export class PrecoService {
     return Math.floor(ms / (1000 * 60 * 60 * 24));
   }
 
-  /** Registra/atualiza o preço de um produto (chamado quando um item ganha preço). */
+  /** Registra a compra: aprende no catálogo (sempre) + memória de preço + histórico. */
   async registrar(nome: string, valor: number): Promise<void> {
-    const v = Number(valor);
-    if (!nome || !v || v <= 0) return;
+    if (!nome) return;
+    const v = Number(valor) || 0;
+
+    // Catálogo local aprende sempre (cria produto novo / atualiza preço).
+    this.catalogoService.aprender(nome, v);
+
+    if (v <= 0) return;
 
     const user = this.authService.getCurrentUser();
     if (!user || !this.supabaseService.isConfigured) return;
 
     const nomeNorm = this.normalizar(nome);
-
-    // Atualiza o cache na hora (feedback imediato).
     this.cache.set(nomeNorm, { valor: v, atualizadoEm: new Date() });
 
     const { error } = await this.db.from('precos_usuario').upsert({
@@ -93,7 +103,32 @@ export class PrecoService {
       valor: v,
       atualizado_em: new Date().toISOString()
     });
-
     if (error) console.warn('Não foi possível salvar preço:', error.message);
+
+    // Histórico (append) para ver a evolução do preço.
+    const { error: hErr } = await this.db.from('historico_precos').insert({
+      user_id: user.uid,
+      nome_normalizado: nomeNorm,
+      nome: nome.trim(),
+      valor: v
+    });
+    if (hErr) console.warn('Não foi possível salvar histórico de preço:', hErr.message);
+  }
+
+  /** Últimos preços pagos por um produto (mais recente primeiro). */
+  async obterHistorico(nome: string, limite = 8): Promise<PrecoHistorico[]> {
+    const user = this.authService.getCurrentUser();
+    if (!user || !this.supabaseService.isConfigured) return [];
+
+    const { data, error } = await this.db
+      .from('historico_precos')
+      .select('valor, data')
+      .eq('user_id', user.uid)
+      .eq('nome_normalizado', this.normalizar(nome))
+      .order('data', { ascending: false })
+      .limit(limite);
+
+    if (error || !data) return [];
+    return data.map(r => ({ valor: Number(r.valor) || 0, data: new Date(r.data) }));
   }
 }

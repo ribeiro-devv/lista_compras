@@ -1,1 +1,41 @@
-/* Estilos padronizados vêm do design system global (global.scss). */
+/* Estilos base vêm do design system global (global.scss). */
+.preco-historico {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--ion-color-medium-rgb), 0.15);
+
+  .ph-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .ph-var {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    &.up { color: var(--ion-color-danger); background: rgba(var(--ion-color-danger-rgb), 0.12); }
+    &.down { color: var(--ion-color-success); background: rgba(var(--ion-color-success-rgb), 0.12); }
+  }
+
+  .ph-list { display: flex; flex-direction: column; gap: 2px; }
+
+  .ph-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 4px;
+    border-bottom: 1px dashed rgba(var(--ion-color-medium-rgb), 0.12);
+    &:last-child { border-bottom: none; }
+  }
+
+  .ph-data { font-size: 0.82rem; color: var(--ion-color-medium); }
+  .ph-valor {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ion-text-color);
+    &.recente { color: var(--ion-color-primary); font-weight: 800; }
+  }
+}

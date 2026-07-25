@@ -5,7 +5,7 @@ import { PixModalComponent } from 'src/app/components/pix-modal/pix-modal.compon
 import { ManageListsModalComponent } from 'src/app/components/manage-lists-modal/manage-lists-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { SharedListService } from 'src/app/services/shared-list.service';
-import { ThemeService } from 'src/app/services/theme.service';
+import { ThemeService, ThemeMode, Density } from 'src/app/services/theme.service';
 import { ColorService } from 'src/app/services/color.service';
 import { Subscription } from 'rxjs';
 
@@ -34,6 +34,16 @@ export class SettingsPage implements OnInit, OnDestroy {
     language: 'pt-BR'
   };
 
+  // Aparência
+  themeMode: ThemeMode = 'system';
+  density: Density = 'comfortable';
+  fontScale = 1;
+  currencies = [
+    { code: 'BRL', label: 'Real (R$)' },
+    { code: 'USD', label: 'Dólar (US$)' },
+    { code: 'EUR', label: 'Euro (€)' }
+  ];
+
   constructor(
     private router: Router,
     private alertController: AlertController,
@@ -52,6 +62,31 @@ export class SettingsPage implements OnInit, OnDestroy {
   onCorCustom(ev: any) {
     const hex = ev?.target?.value;
     if (hex) this.colorService.setCor(hex);
+  }
+
+  // ---- Aparência ----
+  setMode(mode: ThemeMode) {
+    this.themeMode = mode;
+    this.themeService.setMode(mode);
+  }
+
+  setDensity(density: Density) {
+    this.density = density;
+    this.themeService.setDensity(density);
+  }
+
+  setFontScale(scale: number) {
+    this.fontScale = scale;
+    this.themeService.setFontScale(scale);
+  }
+
+  salvarNome() {
+    const nome = (this.userProfile.name || '').trim();
+    this.userProfile.name = nome;
+    this.saveUserProfile();
+    if (this.isAuthenticated) {
+      this.authService.updateUserProfile(nome).catch(() => {});
+    }
   }
 
   ngOnInit() {
@@ -129,8 +164,10 @@ export class SettingsPage implements OnInit, OnDestroy {
     if (savedSettings) {
       this.appSettings = { ...this.appSettings, ...JSON.parse(savedSettings) };
     }
-    // O tema é gerenciado pelo ThemeService (fonte única de verdade).
-    this.appSettings.darkMode = this.themeService.isDarkMode();
+    // Aparência gerenciada pelo ThemeService (fonte única de verdade).
+    this.themeMode = this.themeService.getMode();
+    this.density = this.themeService.getDensity();
+    this.fontScale = this.themeService.getFontScale();
   }
 
   saveUserProfile() {
@@ -202,11 +239,6 @@ export class SettingsPage implements OnInit, OnDestroy {
     });
 
     await alert.present();
-  }
-
-  onDarkModeToggle() {
-    this.themeService.setDark(this.appSettings.darkMode);
-    this.saveAppSettings();
   }
 
   onNotificationsToggle() {

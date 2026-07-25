@@ -148,6 +148,16 @@
       <ion-icon name="add" slot="start"></ion-icon>
       Adicionar produto
     </ion-button>
+
+    <div class="sugeridos" *ngIf="sugeridos.length > 0">
+      <p class="sugeridos-title">Comprados com frequência</p>
+      <div class="sugeridos-scroll">
+        <button class="sugerido-chip" *ngFor="let s of sugeridos" (click)="adicionarRapido(s)">
+          <ion-icon [name]="s.favorito ? 'star' : 'add-circle-outline'" [class.fav]="s.favorito"></ion-icon>
+          {{ s.nome }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Lista concluída -->

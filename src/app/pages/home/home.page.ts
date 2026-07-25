@@ -37,6 +37,9 @@ export class HomePage implements OnInit, OnDestroy {
   itensAgrupados: Array<{ categoria: string; itens: any[] }> = [];
   progresso = { comprados: 0, total: 0, percent: 0 };
 
+  // Atalhos "mais comprados" (tela vazia)
+  sugeridos: ProdutoCatalogo[] = [];
+
   private listaSubscription?: Subscription;
   private currentListSubscription?: Subscription;
 
@@ -78,6 +81,13 @@ export class HomePage implements OnInit, OnDestroy {
   ionViewDidEnter() {
     this.listarTarefa();
     this.checkFirstAccess();
+    this.carregarSugeridos();
+  }
+
+  carregarSugeridos() {
+    let lista = this.catalogoService.obterMaisUsados(12);
+    if (lista.length === 0) lista = this.catalogoService.obterFavoritos().slice(0, 12);
+    this.sugeridos = lista;
   }
 
   openSettings() {

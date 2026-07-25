@@ -514,3 +514,44 @@ ion-fab { margin-bottom: 8px; }
 
   .meu-ic { font-size: 0.72rem; }
 }
+
+// Atalhos "mais comprados" (tela vazia)
+.sugeridos {
+  margin-top: 28px;
+  width: 100%;
+  max-width: 480px;
+
+  .sugeridos-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--ion-color-medium);
+    margin: 0 4px 10px;
+    text-align: left;
+  }
+
+  .sugeridos-scroll {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .sugerido-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(var(--ion-color-primary-rgb), 0.25);
+    background: rgba(var(--ion-color-primary-rgb), 0.06);
+    color: var(--ion-color-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    ion-icon { font-size: 1rem; &.fav { color: var(--ion-color-warning); } }
+    &:active { transform: scale(0.95); }
+  }
+}

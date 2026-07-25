@@ -439,3 +439,11 @@ ion-modal.add-produto-modal ion-input {
   font-weight: 800;
   color: var(--ion-color-primary);
 }
+
+/* Densidade compacta (Configurações → Densidade) */
+body.compact {
+  .produto-item { margin-bottom: 6px; --min-height: 44px; }
+  .action-card { height: 96px; flex-basis: 96px; }
+  .quick-add { margin-bottom: 8px; }
+  ion-item { --min-height: 42px; }
+}
