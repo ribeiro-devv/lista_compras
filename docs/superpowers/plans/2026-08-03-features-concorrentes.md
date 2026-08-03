@@ -479,6 +479,14 @@ Tela nova em Ajustes, **"Categorias"**:
 
 **Aceite:** `npx cap doctor` sem erro; APK debug instala e abre; `npm run test:ci` verde.
 
+**Como saiu na execução (03/08/2026):** Angular 14 → 15 → 16 → 17.3.12, Ionic 6 → 8.8, Capacitor 4 → 7.6, um commit por salto, com `npm run test:ci` e `ng build` verdes entre cada um. Três coisas que a spec não previa:
+
+1. **rxjs 6 → 7.8 virou obrigatório**, porque o Ionic 8 exige `rxjs >=7.5` e o `ng update` do Angular não sobe rxjs sozinho. Risco baixo aqui: o código não usa `toPromise()` nem `pipe()` em lugar nenhum.
+2. **zone.js 0.14 removeu os subcaminhos `dist/`.** `import 'zone.js/dist/zone'` e `'zone.js/dist/zone-testing'` viraram `'zone.js'` e `'zone.js/testing'`. Sem isso o Karma nem carrega.
+3. **AGP 8 exige `namespace` no `build.gradle`** e proíbe o atributo `package` no `AndroidManifest.xml`; `compileSdkVersion`/`minSdkVersion`/`targetSdkVersion` viraram `compileSdk`/`minSdk`/`targetSdk`.
+
+**Aceite parcial — o que falta e por quê:** `npx cap doctor` responde `Android looking great!` e o `cap sync` roda. **O APK não foi compilado.** A máquina não tem Android SDK nem Android Studio, e dos JDKs instalados (11, 17, 25) nenhum serve: o Capacitor 7 compila com `JavaVersion.VERSION_21`, que o JDK 17 não alcança, e o Gradle 8.11 não suporta o JDK 25. Para fechar esta fase o dono precisa instalar **JDK 21** e o **Android SDK 35**, e então rodar `npx cap open android` e validar no dispositivo.
+
 ---
 
 ## FASE 7 — Nativo: voz, biometria, leitor de código
@@ -554,6 +562,6 @@ Fallback obrigatório para PIN/senha do aparelho quando não houver biometria ca
 | 3 — Unidade e desconto | não | ✅ feita |
 | 4 — Categorias customizadas | não | ✅ feita |
 | 5 — Lojas e ilustrações | não | ✅ feita |
-| 6 — Upgrade Capacitor/Ionic/Angular | não | **não** — pede validação em dispositivo |
+| 6 — Upgrade Capacitor/Ionic/Angular | não | ⚠️ código feito; **falta build do APK** (precisa JDK 21 + Android SDK) |
 | 7 — Voz, biometria, scanner | não | sim |
 | 8 — Widget | não | fim |
