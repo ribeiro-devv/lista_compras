@@ -485,7 +485,17 @@ Tela nova em Ajustes, **"Categorias"**:
 2. **zone.js 0.14 removeu os subcaminhos `dist/`.** `import 'zone.js/dist/zone'` e `'zone.js/dist/zone-testing'` viraram `'zone.js'` e `'zone.js/testing'`. Sem isso o Karma nem carrega.
 3. **AGP 8 exige `namespace` no `build.gradle`** e proíbe o atributo `package` no `AndroidManifest.xml`; `compileSdkVersion`/`minSdkVersion`/`targetSdkVersion` viraram `compileSdk`/`minSdk`/`targetSdk`.
 
-**Aceite parcial — o que falta e por quê:** `npx cap doctor` responde `Android looking great!` e o `cap sync` roda. **O APK não foi compilado.** A máquina não tem Android SDK nem Android Studio, e dos JDKs instalados (11, 17, 25) nenhum serve: o Capacitor 7 compila com `JavaVersion.VERSION_21`, que o JDK 17 não alcança, e o Gradle 8.11 não suporta o JDK 25. Para fechar esta fase o dono precisa instalar **JDK 21** e o **Android SDK 35**, e então rodar `npx cap open android` e validar no dispositivo.
+**Aceite alcançado:** `npx cap doctor` responde `Android looking great!`, e `./gradlew assembleDebug` termina em **`BUILD SUCCESSFUL`**, gerando um APK de 25,5 MB com `compileSdk 35` / `targetSdk 35`. Toolchain usada: JDK 21.0.11 e Android SDK (platform-tools, platforms;android-35, build-tools;35.0.0), instalados em `C:/Users/ingri/sdk/android`.
+
+**Como rodar o build do Android nesta máquina:**
+
+```bash
+JAVA_HOME=C:/Users/ingri/java/jdk-21.0.11_windows-x64_bin/jdk-21.0.11 ./gradlew assembleDebug
+```
+
+O `android/local.properties` aponta o `sdk.dir` e **não** é versionado (já estava no `.gitignore`). Use barra normal no caminho: com barra invertida o Gradle falha com `java.io.IOException: A sintaxe do nome do arquivo... está incorreta`, que não diz nada sobre a causa real.
+
+**Único item de aceite ainda em aberto:** "APK instala e abre". Não há aparelho conectado (`adb devices` vazio) nem emulador criado, então a instalação não foi testada. Falta o dono conectar o celular com depuração USB e rodar `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 
@@ -562,6 +572,6 @@ Fallback obrigatório para PIN/senha do aparelho quando não houver biometria ca
 | 3 — Unidade e desconto | não | ✅ feita |
 | 4 — Categorias customizadas | não | ✅ feita |
 | 5 — Lojas e ilustrações | não | ✅ feita |
-| 6 — Upgrade Capacitor/Ionic/Angular | não | ⚠️ código feito; **falta build do APK** (precisa JDK 21 + Android SDK) |
+| 6 — Upgrade Capacitor/Ionic/Angular | não | ✅ feita — APK compila; falta só instalar num aparelho |
 | 7 — Voz, biometria, scanner | não | sim |
 | 8 — Widget | não | fim |
