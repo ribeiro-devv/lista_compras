@@ -18,6 +18,27 @@ export interface CategoriaProduto {
   cor: string;
 }
 
+/**
+ * Categorias que todo usuário recebe no primeiro acesso. A partir da Fase 4
+ * elas são apenas a semente: a fonte da verdade passa a ser a tabela
+ * `categorias` no Supabase, gerenciada pelo CategoriaService.
+ */
+export const CATEGORIAS_PADRAO: ReadonlyArray<CategoriaProduto> = [
+  { id: 'higiene-pessoal', nome: 'Higiene Pessoal', icone: 'sparkles-outline', cor: '#3880ff' },
+  { id: 'limpeza-domestica', nome: 'Limpeza Doméstica', icone: 'home-outline', cor: '#2dd36f' },
+  { id: 'laticinios-padaria', nome: 'Laticínios & Padaria', icone: 'cafe-outline', cor: '#ffc409' },
+  { id: 'carnes-proteinas', nome: 'Carnes & Proteínas', icone: 'fish-outline', cor: '#f04141' },
+  { id: 'frutas-verduras', nome: 'Frutas & Verduras', icone: 'leaf-outline', cor: '#10dc60' },
+  { id: 'graos-basicos', nome: 'Grãos & Básicos', icone: 'basket-outline', cor: '#7044ff' },
+  { id: 'bebidas', nome: 'Bebidas', icone: 'wine-outline', cor: '#ff6b35' },
+  { id: 'doces-salgadinhos', nome: 'Doces & Salgadinhos', icone: 'happy-outline', cor: '#ffce00' },
+  { id: 'congelados', nome: 'Congelados', icone: 'snow-outline', cor: '#00d4ff' },
+  { id: 'outros', nome: 'Outros', icone: 'ellipsis-horizontal-outline', cor: '#6c757d' }
+];
+
+/** Nome da categoria que nunca pode ser renomeada nem excluída. */
+export const CATEGORIA_PADRAO_NOME = 'Outros';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,19 +46,8 @@ export class CatalogoService {
   private readonly CATALOGO_KEY = 'catalogoProdutos';
   private readonly FAVORITOS_KEY = 'produtosFavoritos';
 
-  // Categorias pré-definidas
-  private categorias: CategoriaProduto[] = [
-    { id: 'higiene-pessoal', nome: 'Higiene Pessoal', icone: 'sparkles-outline', cor: '#3880ff' },
-    { id: 'limpeza-domestica', nome: 'Limpeza Doméstica', icone: 'home-outline', cor: '#2dd36f' },
-    { id: 'laticinios-padaria', nome: 'Laticínios & Padaria', icone: 'cafe-outline', cor: '#ffc409' },
-    { id: 'carnes-proteinas', nome: 'Carnes & Proteínas', icone: 'fish-outline', cor: '#f04141' },
-    { id: 'frutas-verduras', nome: 'Frutas & Verduras', icone: 'leaf-outline', cor: '#10dc60' },
-    { id: 'graos-basicos', nome: 'Grãos & Básicos', icone: 'basket-outline', cor: '#7044ff' },
-    { id: 'bebidas', nome: 'Bebidas', icone: 'wine-outline', cor: '#ff6b35' },
-    { id: 'doces-salgadinhos', nome: 'Doces & Salgadinhos', icone: 'happy-outline', cor: '#ffce00' },
-    { id: 'congelados', nome: 'Congelados', icone: 'snow-outline', cor: '#00d4ff' },
-    { id: 'outros', nome: 'Outros', icone: 'ellipsis-horizontal-outline', cor: '#6c757d' }
-  ];
+  /** Espelho local das categorias do usuário, atualizado pelo CategoriaService. */
+  private categorias: CategoriaProduto[] = CATEGORIAS_PADRAO.map(c => ({ ...c }));
 
   // Produtos pré-cadastrados
   private produtosIniciais: ProdutoCatalogo[] = [
@@ -125,9 +135,20 @@ export class CatalogoService {
     return this.categorias;
   }
 
+  /** Chamado pelo CategoriaService quando as categorias do usuário mudam. */
+  definirCategorias(categorias: CategoriaProduto[]): void {
+    this.categorias = categorias;
+  }
+
   // Obter categoria por ID
+  //
+  // Os produtos do catálogo apontam para as categorias padrão pelo slug
+  // ('higiene-pessoal'), enquanto as categorias do usuário no Supabase têm
+  // UUID. Por isso procura primeiro nas padrão: sem isso todo produto do
+  // catálogo cairia em "Outros" depois da Fase 4.
   obterCategoriaPorId(id: string): CategoriaProduto | undefined {
-    return this.categorias.find(cat => cat.id === id);
+    return CATEGORIAS_PADRAO.find(cat => cat.id === id)
+      ?? this.categorias.find(cat => cat.id === id);
   }
 
   // Buscar produtos por nome

@@ -173,11 +173,28 @@
     </ion-button>
   </div>
 
-  <!-- Lista de produtos agrupada por categoria -->
+  <!-- Seletor de ordenação -->
+  <div class="ordenacao-bar" *ngIf="tarefaCollection.length > 0">
+    <button class="ordenacao-chip" (click)="abrirSeletorOrdenacao()">
+      <ion-icon name="swap-vertical-outline"></ion-icon>
+      <span>{{ rotuloOrdenacao() }}</span>
+      <ion-icon name="chevron-down" class="chev"></ion-icon>
+    </button>
+  </div>
+
+  <!-- Lista de produtos -->
   <div class="produtos-groups" *ngIf="tarefaCollection.length > 0">
     <div class="categoria-grupo" *ngFor="let grupo of itensAgrupados; trackBy: trackByCategoria">
-      <div class="categoria-header">
-        <ion-icon [name]="getCategoriaIcon(grupo.categoria)"></ion-icon>
+      <div class="categoria-header" *ngIf="grupo.categoria">
+        <span
+          *ngIf="getCategoriaArte(grupo.categoria) as arte"
+          class="categoria-arte"
+          [attr.data-arte]="arte"
+          [style.background-color]="getCategoriaCor(grupo.categoria)"></span>
+        <ion-icon
+          *ngIf="!getCategoriaArte(grupo.categoria)"
+          [name]="getCategoriaIcon(grupo.categoria)"
+          [style.color]="getCategoriaCor(grupo.categoria)"></ion-icon>
         <span>{{ grupo.categoria }}</span>
         <span class="categoria-count">{{ grupo.itens.length }}</span>
       </div>
@@ -194,7 +211,10 @@
                 <span class="chip-valor" *ngIf="item.valorUnitario > 0">
                   {{ formatarMoeda(item.valorUnitario) }}
                 </span>
-                <span class="chip-subtotal" *ngIf="item.valorUnitario > 0">
+                <span class="chip-riscado" *ngIf="item.valorUnitario > 0 && temDesconto(item)">
+                  {{ formatarMoeda(calcularSubtotalCheio(item)) }}
+                </span>
+                <span class="chip-subtotal" *ngIf="item.valorUnitario > 0" [class.com-desconto]="temDesconto(item)">
                   {{ formatarMoeda(calcularSubtotal(item)) }}
                 </span>
               </div>
@@ -208,7 +228,7 @@
               <button class="qtd-btn" (click)="alterarQuantidade(item, -1, $event)">
                 <ion-icon name="remove"></ion-icon>
               </button>
-              <span class="qtd-num">{{ item.quantidade }}</span>
+              <span class="qtd-num">{{ rotuloQuantidade(item) }}</span>
               <button class="qtd-btn" (click)="alterarQuantidade(item, 1, $event)">
                 <ion-icon name="add"></ion-icon>
               </button>
@@ -237,6 +257,13 @@
     <div class="totals-row secondary">
       <span>Estimativa da lista completa</span>
       <span>{{ formatarMoeda(getTotalGeral()) }}</span>
+    </div>
+    <div class="totals-row economia" *ngIf="getTotalDesconto() > 0">
+      <span>
+        <ion-icon name="pricetag-outline"></ion-icon>
+        Você economizou
+      </span>
+      <span>{{ formatarMoeda(getTotalDesconto()) }}</span>
     </div>
   </div>
 

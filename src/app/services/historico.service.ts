@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
+import { somarSubtotais, subtotalItem } from './calculo-item';
 
 export interface ItemCompra {
   codigo: number;
@@ -10,6 +11,9 @@ export interface ItemCompra {
   feito: boolean;
   dataCompra?: string | null;
   categoria?: string;
+  /** Ausentes no histórico anterior à Fase 3 — sempre tratar como opcionais. */
+  unidade?: string;
+  desconto?: number;
 }
 
 export interface ListaCompra {
@@ -77,7 +81,11 @@ export class HistoricoService {
   }
 
   /** Arquiva a lista atual (grava no Supabase e atualiza o cache). */
-  async arquivarListaAtual(itens: ItemCompra[], nomeCustomizado?: string): Promise<ListaCompra> {
+  async arquivarListaAtual(
+    itens: ItemCompra[],
+    nomeCustomizado?: string,
+    lojaId: string | null = null
+  ): Promise<ListaCompra> {
     const user = this.authService.getCurrentUser();
     const agora = new Date();
 
@@ -110,7 +118,8 @@ export class HistoricoService {
         total_itens: lista.totalItens,
         percentual_concluido: lista.percentualConcluido,
         itens: lista.itens,
-        categorias
+        categorias,
+        loja_id: lojaId
       }).select().single();
 
       if (error) {
@@ -132,6 +141,27 @@ export class HistoricoService {
         return { mes: parseInt(mes), ano: parseInt(ano), resumo: this.meses[chave] };
       })
       .sort((a, b) => (a.ano !== b.ano ? b.ano - a.ano : b.mes - a.mes));
+  }
+
+  /** Remove uma lista arquivada do histórico (e das estatísticas). */
+  async excluirLista(id: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+
+    if (user && this.supabaseService.isConfigured) {
+      const { error } = await this.db
+        .from('archived_lists')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.uid);
+
+      if (error) {
+        console.error('❌ Erro ao excluir lista do histórico:', error.message);
+        throw new Error(error.message);
+      }
+    }
+
+    this.listasArquivadas = this.listasArquivadas.filter(lista => lista.id !== id);
+    this.reconstruirMeses();
   }
 
   obterEstatisticasGerais(): any {
@@ -241,9 +271,7 @@ export class HistoricoService {
     const categorias: { [key: string]: number } = {};
     itens.forEach(item => {
       const categoria = item.categoria || 'Outros';
-      const valor = (parseFloat(item.quantidade?.toString()) || 0) *
-                    (parseFloat(item.valorUnitario?.toString()) || 0);
-      categorias[categoria] = (categorias[categoria] || 0) + valor;
+      categorias[categoria] = (categorias[categoria] || 0) + subtotalItem(item);
     });
     return categorias;
   }
@@ -274,11 +302,7 @@ export class HistoricoService {
   }
 
   private calcularTotalLista(itens: ItemCompra[]): number {
-    return itens.reduce((total, item) => {
-      const quantidade = parseFloat(item.quantidade?.toString()) || 0;
-      const valor = parseFloat(item.valorUnitario?.toString()) || 0;
-      return total + (quantidade * valor);
-    }, 0);
+    return somarSubtotais(itens);
   }
 
   private calcularPercentualConcluido(itens: ItemCompra[]): number {
@@ -296,13 +320,12 @@ export class HistoricoService {
   }
 
   private converterParaCSV(dados: any): string {
-    let csv = 'Lista,Data,Item,Quantidade,Valor Unitário,Total,Categoria,Status\n';
+    let csv = 'Lista,Data,Item,Quantidade,Unidade,Valor Unitário,Desconto,Total,Categoria,Status\n';
     Object.values(dados.historico).forEach((mes: any) => {
       mes.listas.forEach((lista: ListaCompra) => {
         lista.itens.forEach(item => {
-          const total = (parseFloat(item.quantidade?.toString()) || 0) *
-                        (parseFloat(item.valorUnitario?.toString()) || 0);
-          csv += `"${lista.nome}","${lista.dataFinalizacao}","${item.tarefa}",${item.quantidade},${item.valorUnitario},${total},"${item.categoria}","${item.feito ? 'Comprado' : 'Pendente'}"\n`;
+          const total = subtotalItem(item);
+          csv += `"${lista.nome}","${lista.dataFinalizacao}","${item.tarefa}",${item.quantidade},"${item.unidade || 'un'}",${item.valorUnitario},${item.desconto || 0},${total},"${item.categoria}","${item.feito ? 'Comprado' : 'Pendente'}"\n`;
         });
       });
     });

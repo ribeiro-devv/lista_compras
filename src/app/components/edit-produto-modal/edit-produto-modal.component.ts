@@ -2,6 +2,8 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ModalController } from '@ionic/angular';
 
+import { normalizarUnidade, UNIDADES, UNIDADE_PADRAO } from 'src/app/services/unidades';
+
 @Component({
   selector: 'app-edit-produto-modal',
   templateUrl: './edit-produto-modal.component.html',
@@ -10,13 +12,16 @@ import { ModalController } from '@ionic/angular';
 export class EditProdutoModalComponent implements OnInit {
   @Input() tarefa: any;
   produtoForm: FormGroup;
+  unidades = UNIDADES;
 
   constructor(private fb: FormBuilder, private modalCtrl: ModalController) {
     this.produtoForm = this.fb.group({
       codigo: [{ value: '', disabled: true }],
       tarefa: ['', Validators.required],
       quantidade: [null, [Validators.required, Validators.min(0)]],
+      unidade: [UNIDADE_PADRAO],
       valorUnitario: [null, [Validators.required, Validators.min(0)]],
+      desconto: [0, [Validators.min(0)]],
     });
   }
 
@@ -26,7 +31,9 @@ export class EditProdutoModalComponent implements OnInit {
         codigo: this.tarefa.codigo,
         tarefa: this.tarefa.tarefa,
         quantidade: this.tarefa.quantidade,
+        unidade: normalizarUnidade(this.tarefa.unidade),
         valorUnitario: this.tarefa.valorUnitario,
+        desconto: this.tarefa.desconto ?? 0,
       });
       this.formatarValorInicial();
     }
@@ -74,6 +81,7 @@ export class EditProdutoModalComponent implements OnInit {
       dados.valorUnitario = parseFloat(
         dados.valorUnitario.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.')
       );
+      dados.desconto = Math.max(0, parseFloat(dados.desconto) || 0);
       this.modalCtrl.dismiss(dados, 'confirm');
     }
   }

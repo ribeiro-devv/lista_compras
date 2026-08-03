@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HistoricoService, ItemCompra } from './historico.service';
-import { CatalogoService } from './catalogo.service';
+import { CatalogoService, CATEGORIA_PADRAO_NOME } from './catalogo.service';
 import { AuthService } from './auth.service';
 import { SharedListService, SharedList } from './shared-list.service';
 import { SupabaseService } from './supabase.service';
 import { PrecoService } from './preco.service';
 import { BehaviorSubject } from 'rxjs';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { somarSubtotais, subtotalItem, totalDescontos } from './calculo-item';
+import { normalizarUnidade, UNIDADE_PADRAO } from './unidades';
 
 @Injectable({
   providedIn: 'root'
@@ -114,6 +116,8 @@ export class TarefaService {
       tarefa: tarefa.tarefa,
       quantidade: this.toNumber(tarefa.quantidade),
       valor_unitario: this.toNumber(tarefa.valorUnitario),
+      desconto: this.toNumber(tarefa.desconto),
+      unidade: normalizarUnidade(tarefa.unidade ?? this.unidadeDoCatalogo(tarefa.tarefa)),
       feito: tarefa.feito ?? false,
       categoria: this.classificarItem(tarefa.tarefa),
       criado_por: user?.uid ?? null
@@ -158,7 +162,9 @@ export class TarefaService {
       const { error } = await this.db.from('list_items').update({
         feito: tarefa.feito,
         valor_unitario: this.toNumber(tarefa.valorUnitario),
-        quantidade: this.toNumber(tarefa.quantidade)
+        quantidade: this.toNumber(tarefa.quantidade),
+        desconto: this.toNumber(tarefa.desconto),
+        unidade: normalizarUnidade(tarefa.unidade)
       }).eq('id', tarefa.id);
       if (error) console.error('❌ Erro ao atualizar item:', error.message);
     }
@@ -171,6 +177,31 @@ export class TarefaService {
     if (callback) callback();
   }
 
+  /** Move o item para outra categoria. Otimista, com rollback se o banco recusar. */
+  async mudarCategoria(tarefa: any, categoria: string): Promise<void> {
+    const idx = this.items.findIndex(i => i.codigo === tarefa.codigo);
+    const anterior = idx !== -1 ? this.items[idx].categoria : null;
+
+    if (idx !== -1) {
+      this.items[idx] = { ...this.items[idx], categoria };
+      this.listaAtualizada$.next([...this.items]);
+    }
+
+    if (tarefa.id) {
+      const { error } = await this.db.from('list_items').update({ categoria }).eq('id', tarefa.id);
+      if (error) {
+        console.error('❌ Erro ao mudar categoria:', error.message);
+        if (idx !== -1) {
+          this.items[idx] = { ...this.items[idx], categoria: anterior };
+          this.listaAtualizada$.next([...this.items]);
+        }
+        throw new Error(error.message);
+      }
+    }
+
+    await this.loadItems();
+  }
+
   async edicao(tarefa: any, callback: (() => void) | null = null) {
     const idx = this.items.findIndex(i => i.codigo === tarefa.codigo);
     if (idx === -1) { if (callback) callback(); return; }
@@ -180,12 +211,16 @@ export class TarefaService {
     if (tarefa.tarefa && tarefa.tarefa.trim() !== '') patch.tarefa = tarefa.tarefa;
     if (tarefa.quantidade != null && tarefa.quantidade !== '') patch.quantidade = this.toNumber(tarefa.quantidade);
     if (tarefa.valorUnitario != null && tarefa.valorUnitario !== '') patch.valor_unitario = this.toNumber(tarefa.valorUnitario);
+    if (tarefa.desconto != null && tarefa.desconto !== '') patch.desconto = this.toNumber(tarefa.desconto);
+    if (tarefa.unidade) patch.unidade = normalizarUnidade(tarefa.unidade);
 
     this.items[idx] = {
       ...item,
       tarefa: patch.tarefa ?? item.tarefa,
       quantidade: patch.quantidade ?? item.quantidade,
-      valorUnitario: patch.valor_unitario ?? item.valorUnitario
+      valorUnitario: patch.valor_unitario ?? item.valorUnitario,
+      desconto: patch.desconto ?? item.desconto,
+      unidade: patch.unidade ?? item.unidade
     };
     this.listaAtualizada$.next([...this.items]);
 
@@ -203,6 +238,39 @@ export class TarefaService {
     if (callback) callback();
   }
 
+  /**
+   * Recria itens de uma lista arquivada na lista ativa, todos como pendentes.
+   * Devolve quantos foram inseridos. Não mexe no histórico.
+   */
+  async restaurarItens(itens: ItemCompra[]): Promise<number> {
+    if (!this.currentList || itens.length === 0) return 0;
+
+    const user = this.authService.getCurrentUser();
+    let proximoCodigo = this.items.reduce((max, i) => Math.max(max, i.codigo || 0), 0);
+
+    const novos = itens.map(item => ({
+      list_id: this.currentList!.id,
+      codigo: ++proximoCodigo,
+      tarefa: item.tarefa,
+      quantidade: this.toNumber(item.quantidade),
+      valor_unitario: this.toNumber(item.valorUnitario),
+      desconto: this.toNumber((item as any).desconto),
+      unidade: normalizarUnidade((item as any).unidade),
+      feito: false,
+      categoria: item.categoria || this.classificarItem(item.tarefa),
+      criado_por: user?.uid ?? null
+    }));
+
+    const { error } = await this.db.from('list_items').insert(novos);
+    if (error) {
+      console.error('❌ Erro ao restaurar itens:', error.message);
+      throw new Error(error.message);
+    }
+
+    await this.loadItems();
+    return novos.length;
+  }
+
   async excluirTodos(callback: (() => void) | null = null) {
     if (this.currentList) {
       const { error } = await this.db.from('list_items').delete().eq('list_id', this.currentList.id);
@@ -214,17 +282,21 @@ export class TarefaService {
     if (callback) callback();
   }
 
-  async arquivarListaAtual(nomeCustomizado?: string): Promise<any> {
+  async arquivarListaAtual(nomeCustomizado?: string, lojaId: string | null = null): Promise<any> {
     const itensParaArquivar: ItemCompra[] = this.items.map(item => ({
       codigo: item.codigo,
       tarefa: item.tarefa,
       quantidade: this.toNumber(item.quantidade),
       valorUnitario: this.toNumber(item.valorUnitario),
+      desconto: this.toNumber(item.desconto),
+      unidade: normalizarUnidade(item.unidade),
       feito: item.feito,
       categoria: item.categoria || this.classificarItem(item.tarefa)
     }));
 
-    const listaArquivada = await this.historicoService.arquivarListaAtual(itensParaArquivar, nomeCustomizado);
+    const listaArquivada = await this.historicoService.arquivarListaAtual(
+      itensParaArquivar, nomeCustomizado, lojaId
+    );
     await this.excluirTodos();
     return listaArquivada;
   }
@@ -239,15 +311,20 @@ export class TarefaService {
   }
 
   calcularTotalGeral(): number {
-    return this.items.reduce((total, item) =>
-      total + this.toNumber(item.quantidade) * this.toNumber(item.valorUnitario), 0);
+    return somarSubtotais(this.items);
   }
 
   calcularTotalComprado(): number {
-    return this.items
-      .filter(item => item.feito === true)
-      .reduce((total, item) =>
-        total + this.toNumber(item.quantidade) * this.toNumber(item.valorUnitario), 0);
+    return somarSubtotais(this.items, item => item.feito === true);
+  }
+
+  /** Quanto os descontos economizaram na lista inteira. */
+  calcularTotalDesconto(): number {
+    return totalDescontos(this.items);
+  }
+
+  calcularSubtotal(item: any): number {
+    return subtotalItem(item);
   }
 
   isListEmpty(): boolean {
@@ -270,6 +347,8 @@ export class TarefaService {
       tarefa: row.tarefa,
       quantidade: this.toNumber(row.quantidade),
       valorUnitario: this.toNumber(row.valor_unitario ?? row.valorUnitario),
+      desconto: this.toNumber(row.desconto),
+      unidade: normalizarUnidade(row.unidade),
       feito: row.feito,
       categoria: row.categoria,
       criadoPor: row.criado_por,
@@ -300,21 +379,38 @@ export class TarefaService {
     localStorage.setItem(this.cacheKey(), JSON.stringify(items));
   }
 
+  /** Herda a unidade do catálogo quando o produto digitado é conhecido. */
+  private unidadeDoCatalogo(nomeItem: string): string {
+    const encontrados = this.catalogoService.buscarProdutos(nomeItem);
+    return encontrados.length > 0 ? encontrados[0].unidade : UNIDADE_PADRAO;
+  }
+
   private classificarItem(nomeItem: string): string {
     const produtosEncontrados = this.catalogoService.buscarProdutos(nomeItem);
     if (produtosEncontrados.length > 0) {
       const produto = produtosEncontrados[0];
       const categoria = this.catalogoService.obterCategoriaPorId(produto.categoria);
-      return categoria?.nome || 'Outros';
+      if (categoria) return this.categoriaExistente(categoria.nome);
     }
 
     const item = (nomeItem || '').toLowerCase();
-    if (/pão|leite|ovo|queijo|manteiga|iogurte|cream|nata/.test(item)) return 'Laticínios & Padaria';
-    if (/carne|frango|peixe|linguiça|salsicha|presunto/.test(item)) return 'Carnes & Proteínas';
-    if (/maçã|banana|laranja|uva|fruta|tomate|alface|cebola|batata/.test(item)) return 'Frutas & Verduras';
-    if (/arroz|feijão|macarrão|açúcar|sal|óleo|farinha/.test(item)) return 'Grãos & Básicos';
-    if (/sabonete|shampoo|pasta|escova|papel|detergente|amaciante/.test(item)) return 'Higiene Pessoal';
-    if (/refrigerante|suco|água|cerveja|vinho|café/.test(item)) return 'Bebidas';
-    return 'Outros';
+    if (/pão|leite|ovo|queijo|manteiga|iogurte|cream|nata/.test(item)) return this.categoriaExistente('Laticínios & Padaria');
+    if (/carne|frango|peixe|linguiça|salsicha|presunto/.test(item)) return this.categoriaExistente('Carnes & Proteínas');
+    if (/maçã|banana|laranja|uva|fruta|tomate|alface|cebola|batata/.test(item)) return this.categoriaExistente('Frutas & Verduras');
+    if (/arroz|feijão|macarrão|açúcar|sal|óleo|farinha/.test(item)) return this.categoriaExistente('Grãos & Básicos');
+    if (/sabonete|shampoo|pasta|escova|papel|detergente|amaciante/.test(item)) return this.categoriaExistente('Higiene Pessoal');
+    if (/refrigerante|suco|água|cerveja|vinho|café/.test(item)) return this.categoriaExistente('Bebidas');
+    return CATEGORIA_PADRAO_NOME;
+  }
+
+  /**
+   * Se o usuário renomeou ou excluiu a categoria que a classificação sugere,
+   * o palpite não vale mais — o item iria para um grupo que não existe no
+   * gerenciador de categorias. Nesse caso cai em "Outros".
+   */
+  private categoriaExistente(nome: string): string {
+    const existe = this.catalogoService.obterCategorias()
+      .some(categoria => categoria.nome === nome);
+    return existe ? nome : CATEGORIA_PADRAO_NOME;
   }
 }

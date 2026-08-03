@@ -159,6 +159,21 @@
 
     <div>
       <span class="text">
+        Unidade
+      </span>
+    </div>
+
+    <ion-select
+      class="form-input-modern"
+      formControlName="unidade"
+      interface="action-sheet"
+      [interfaceOptions]="{ header: 'Unidade de medida' }"
+    >
+      <ion-select-option *ngFor="let u of unidades" [value]="u.valor">{{ u.rotulo }}</ion-select-option>
+    </ion-select>
+
+    <div>
+      <span class="text">
         Valor Unitário
       </span>
     </div>

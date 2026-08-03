@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 
+import { CompararPrecosModalComponent } from './comparar-precos-modal/comparar-precos-modal.component';
+import { DetalhesListaModalComponent } from './detalhes-lista-modal/detalhes-lista-modal.component';
 import { DetalhesProdutoModalComponent } from './detalhes-produto-modal/detalhes-produto-modal.component';
 import { ExcluirTodosModalComponent } from './excluir-todos-modal/excluir-todos-modal.component';
 import { ManageListsModalComponent } from './manage-lists-modal/manage-lists-modal.component';
@@ -16,6 +18,8 @@ import { PixModalComponent } from './pix-modal/pix-modal.component';
  */
 @NgModule({
   declarations: [
+    CompararPrecosModalComponent,
+    DetalhesListaModalComponent,
     DetalhesProdutoModalComponent,
     ExcluirTodosModalComponent,
     ManageListsModalComponent,
@@ -24,6 +28,8 @@ import { PixModalComponent } from './pix-modal/pix-modal.component';
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule],
   exports: [
+    CompararPrecosModalComponent,
+    DetalhesListaModalComponent,
     DetalhesProdutoModalComponent,
     ExcluirTodosModalComponent,
     ManageListsModalComponent,

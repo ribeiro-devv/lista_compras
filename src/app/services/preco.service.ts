@@ -2,8 +2,16 @@ import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
 import { CatalogoService } from './catalogo.service';
+import { Loja, LojaService } from './loja.service';
 
 export interface PrecoHistorico {
+  valor: number;
+  data: Date;
+  lojaId?: string | null;
+}
+
+export interface PrecoPorLoja {
+  loja: Loja | null;
   valor: number;
   data: Date;
 }
@@ -23,7 +31,8 @@ export class PrecoService {
   constructor(
     private supabaseService: SupabaseService,
     private authService: AuthService,
-    private catalogoService: CatalogoService
+    private catalogoService: CatalogoService,
+    private lojaService: LojaService
   ) {
     this.authService.currentUser$.subscribe(user => {
       if (user) {
@@ -105,12 +114,13 @@ export class PrecoService {
     });
     if (error) console.warn('Não foi possível salvar preço:', error.message);
 
-    // Histórico (append) para ver a evolução do preço.
+    // Histórico (append) para ver a evolução do preço e comparar por loja.
     const { error: hErr } = await this.db.from('historico_precos').insert({
       user_id: user.uid,
       nome_normalizado: nomeNorm,
       nome: nome.trim(),
-      valor: v
+      valor: v,
+      loja_id: this.lojaService.lojaAtualId()
     });
     if (hErr) console.warn('Não foi possível salvar histórico de preço:', hErr.message);
   }
@@ -122,13 +132,54 @@ export class PrecoService {
 
     const { data, error } = await this.db
       .from('historico_precos')
-      .select('valor, data')
+      .select('valor, data, loja_id')
       .eq('user_id', user.uid)
       .eq('nome_normalizado', this.normalizar(nome))
       .order('data', { ascending: false })
       .limit(limite);
 
     if (error || !data) return [];
-    return data.map(r => ({ valor: Number(r.valor) || 0, data: new Date(r.data) }));
+    return data.map(r => ({
+      valor: Number(r.valor) || 0,
+      data: new Date(r.data),
+      lojaId: r.loja_id ?? null
+    }));
+  }
+
+  /**
+   * Último preço do produto em cada loja, do mais barato ao mais caro.
+   * Registros sem loja entram como "Sem loja" (loja null).
+   */
+  async precosPorLoja(nome: string): Promise<PrecoPorLoja[]> {
+    const user = this.authService.getCurrentUser();
+    if (!user || !this.supabaseService.isConfigured) return [];
+
+    const { data, error } = await this.db
+      .from('historico_precos')
+      .select('valor, data, loja_id')
+      .eq('user_id', user.uid)
+      .eq('nome_normalizado', this.normalizar(nome))
+      .order('data', { ascending: false });
+
+    if (error || !data) return [];
+
+    const lojas = this.lojaService.listarSync();
+
+    // Como já vem do mais recente para o mais antigo, o primeiro registro de
+    // cada loja é o preço mais atual dela.
+    const maisRecentePorLoja = new Map<string, PrecoPorLoja>();
+
+    for (const linha of data) {
+      const chave = linha.loja_id ?? '__sem_loja__';
+      if (maisRecentePorLoja.has(chave)) continue;
+
+      maisRecentePorLoja.set(chave, {
+        loja: lojas.find(l => l.id === linha.loja_id) || null,
+        valor: Number(linha.valor) || 0,
+        data: new Date(linha.data)
+      });
+    }
+
+    return Array.from(maisRecentePorLoja.values()).sort((a, b) => a.valor - b.valor);
   }
 }

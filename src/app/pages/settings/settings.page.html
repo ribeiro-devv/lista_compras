@@ -123,6 +123,27 @@
       </div>
     </ng-container>
 
+    <!-- Organização -->
+    <h2 class="section-title" *ngIf="isAuthenticated">Organização</h2>
+    <div class="surface-card action-list" *ngIf="isAuthenticated">
+      <button class="action-row" (click)="abrirCategorias()">
+        <ion-icon name="pricetags-outline" class="row-lead"></ion-icon>
+        <div class="action-text">
+          <strong>Categorias</strong>
+          <small>Crie, renomeie e reordene as categorias da sua lista</small>
+        </div>
+        <ion-icon name="chevron-forward" class="row-chev"></ion-icon>
+      </button>
+      <button class="action-row" (click)="abrirLojas()">
+        <ion-icon name="storefront-outline" class="row-lead"></ion-icon>
+        <div class="action-text">
+          <strong>Lojas</strong>
+          <small>Compare o preço dos produtos entre os mercados</small>
+        </div>
+        <ion-icon name="chevron-forward" class="row-chev"></ion-icon>
+      </button>
+    </div>
+
     <!-- Compartilhamento -->
     <h2 class="section-title" *ngIf="isAuthenticated">Compartilhamento</h2>
     <div class="surface-card action-list" *ngIf="isAuthenticated">

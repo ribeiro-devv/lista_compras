@@ -7,13 +7,15 @@ import { IonicModule } from '@ionic/angular';
 import { HistoricoPageRoutingModule } from './historico-routing.module';
 
 import { HistoricoPage } from './historico.page';
+import { SharedComponentsModule } from 'src/app/components/shared-components.module';
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
     IonicModule,
-    HistoricoPageRoutingModule
+    HistoricoPageRoutingModule,
+    SharedComponentsModule
   ],
   declarations: [HistoricoPage]
 })

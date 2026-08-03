@@ -4,8 +4,9 @@
     {
       "name": "ionic-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start", "--", "--port", "4200"],
-      "port": 4200
+      "runtimeArgs": ["start", "--", "--port", "4310"],
+      "port": 4310,
+      "autoPort": false
     }
   ]
 }

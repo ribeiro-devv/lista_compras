@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ModalController, IonInput, ToastController } from '@ionic/angular';
 import { CatalogoService, ProdutoCatalogo, CategoriaProduto } from '../../services/catalogo.service';
+import { normalizarUnidade, UNIDADES, UNIDADE_PADRAO } from '../../services/unidades';
 
 @Component({
   selector: 'app-add-produto-modal',
@@ -17,6 +18,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
   mostrarCatalogo: boolean = false;
   produtoSelecionado: ProdutoCatalogo | null = null;
   modoBusca: boolean = false;
+  unidades = UNIDADES;
 
   @ViewChild('nomeProdutoInput', { static: false }) nomeProdutoInput!: IonInput;
 
@@ -29,6 +31,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
     this.produtoForm = this.fb.group({
       tarefa: ['', Validators.required],
       quantidade: [null, [Validators.min(0)]],
+      unidade: [UNIDADE_PADRAO],
       valorUnitario: [null, [Validators.min(0.00)]],
       feito: [false],
     });
@@ -75,6 +78,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
     const retorno = {
       tarefa: dados.tarefa,
       quantidade: dados.quantidade ?? 0,
+      unidade: normalizarUnidade(dados.unidade),
       valorUnitario: Number(valorLimpo),
       feito: dados.feito ?? false,
     };
@@ -110,6 +114,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
     this.produtoForm.patchValue({
       tarefa: produto.nome,
       quantidade: 1,
+      unidade: normalizarUnidade(produto.unidade),
       valorUnitario: produto.precoMedio ? this.formatarPrecoMedio(produto.precoMedio) : null
     });
     

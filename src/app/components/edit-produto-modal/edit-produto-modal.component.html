@@ -35,6 +35,21 @@
 
     <div>
       <span class="text">
+        Unidade
+      </span>
+    </div>
+
+    <ion-select
+      class="form-input-modern"
+      formControlName="unidade"
+      interface="action-sheet"
+      [interfaceOptions]="{ header: 'Unidade de medida' }"
+    >
+      <ion-select-option *ngFor="let u of unidades" [value]="u.valor">{{ u.rotulo }}</ion-select-option>
+    </ion-select>
+
+    <div>
+      <span class="text">
         Valor Unitário
       </span>
     </div>
@@ -45,6 +60,21 @@
       type="text"
       inputmode="decimal"
       (ionInput)="formatarMoeda($event)"
+    ></ion-input>
+
+    <div>
+      <span class="text">
+        Desconto (R$)
+      </span>
+    </div>
+
+    <ion-input
+      class="form-input-modern"
+      formControlName="desconto"
+      type="number"
+      min="0"
+      step="0.01"
+      placeholder="0,00"
     ></ion-input>
 
     <div class="modal-footer">

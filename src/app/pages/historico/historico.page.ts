@@ -2,6 +2,8 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ActionSheetController, AlertController, ToastController, ModalController } from '@ionic/angular';
 import { HistoricoService, ResumoMensal, ListaCompra } from '../../services/historico.service';
 import { ThemeService } from '../../services/theme.service';
+import { TarefaService } from '../../services/tarefa.service';
+import { DetalhesListaModalComponent } from '../../components/detalhes-lista-modal/detalhes-lista-modal.component';
 import { Router } from '@angular/router';
 
 @Component({
@@ -30,6 +32,7 @@ export class HistoricoPage implements OnInit {
     private toastCtrl: ToastController,
     private modalCtrl: ModalController,
     private router: Router,
+    private tarefaService: TarefaService,
   ) { }
 
   ngOnInit() {
@@ -302,50 +305,45 @@ export class HistoricoPage implements OnInit {
   }
 
   async verDetalhesLista(lista: ListaCompra) {
-    const alert = await this.alertCtrl.create({
-      header: lista.nome,
-      subHeader: `Finalizada em ${this.formatarDataCompleta(lista.dataFinalizacao)}`,
-      message: this.construirDetalhesList(lista),
-      buttons: [
-        {
-          text: 'Ver Itens',
-          handler: () => {
-            this.mostrarItensLista(lista);
-          }
-        },
-        {
-          text: 'Fechar',
-          role: 'cancel'
-        }
-      ]
+    const modal = await this.modalCtrl.create({
+      component: DetalhesListaModalComponent,
+      componentProps: { lista },
+      cssClass: 'manage-lists-modal'
     });
-    await alert.present();
+
+    modal.onDidDismiss().then(async ({ data, role }) => {
+      if (role !== 'confirm' || !data) return;
+      if (data.acao === 'restaurar') await this.restaurarLista(data.lista);
+      if (data.acao === 'excluir') await this.excluirLista(data.lista);
+    });
+
+    await modal.present();
   }
 
-  async mostrarItensLista(lista: ListaCompra) {
-    let mensagem = '<div style="max-height: 300px; overflow-y: auto;">';
-    
-    lista.itens.forEach(item => {
-      const subtotal = (item.quantidade || 0) * (item.valorUnitario || 0);
-      const status = item.feito ? '✅' : '❌';
-      mensagem += `
-        <p style="margin: 8px 0; padding: 8px; border-left: 3px solid ${item.feito ? '#2dd36f' : '#ffc409'};">
-          <strong>${item.tarefa}</strong><br>
-          ${status} Qtd: ${item.quantidade} • R$ ${item.valorUnitario?.toFixed(2)} • Total: R$ ${subtotal.toFixed(2)}<br>
-          <small style="color: #666;">${item.categoria}</small>
-        </p>
-      `;
-    });
-    
-    mensagem += '</div>';
-
-    const alert = await this.alertCtrl.create({
-      header: `Itens - ${lista.nome}`,
-      message: mensagem,
-      buttons: ['Fechar']
-    });
-    await alert.present();
+  private async restaurarLista(lista: ListaCompra) {
+    try {
+      const total = await this.tarefaService.restaurarItens(lista.itens);
+      await this.mostrarToast(
+        total > 0
+          ? `${total} ${total === 1 ? 'item restaurado' : 'itens restaurados'} para a lista atual`
+          : 'Nada a restaurar',
+        total > 0 ? 'success' : 'medium'
+      );
+    } catch {
+      await this.mostrarToast('Não foi possível restaurar os itens', 'danger');
+    }
   }
+
+  private async excluirLista(lista: ListaCompra) {
+    try {
+      await this.historicoService.excluirLista(lista.id);
+      await this.carregarDados();
+      await this.mostrarToast(`"${lista.nome}" saiu do histórico`, 'success');
+    } catch {
+      await this.mostrarToast('Não foi possível excluir a lista', 'danger');
+    }
+  }
+
 
   async exportarDados() {
     const actionSheet = await this.actionSheetCtrl.create({
@@ -441,15 +439,6 @@ ${this.mesesDisponiveis.slice(0, 3).map(m =>
 
 Gerado pelo app Lista de Compras 📱
     `.trim();
-  }
-
-  construirDetalhesList(lista: ListaCompra): string {
-    return `
-      <strong>Total:</strong> ${this.formatarMoeda(lista.totalGasto)}<br>
-      <strong>Itens:</strong> ${lista.totalItens}<br>
-      <strong>Concluído:</strong> ${lista.percentualConcluido}%<br>
-      <strong>Período:</strong> ${this.formatarDataSimples(lista.dataInicio)} até ${this.formatarDataSimples(lista.dataFinalizacao)}
-    `;
   }
 
   getCategoriaIcon(categoria: string): string {
@@ -550,11 +539,12 @@ Gerado pelo app Lista de Compras 📱
   }
 
   // Toast helper
-  private async mostrarToast(message: string) {
+  private async mostrarToast(message: string, color?: string) {
     const toast = await this.toastCtrl.create({
       message,
       duration: 2000,
-      position: 'top'
+      position: 'top',
+      color
     });
     toast.present();
   }

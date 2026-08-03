@@ -1,0 +1,94 @@
+<ion-header class="detalhes-lista-header">
+  <ion-toolbar>
+    <ion-title>{{ lista.nome }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="fechar()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="detalhes-lista-content">
+
+  <!-- Resumo -->
+  <div class="resumo-card">
+    <div class="resumo-topo">
+      <div>
+        <p class="resumo-label">Total gasto</p>
+        <h2 class="resumo-valor">{{ formatarMoeda(lista.totalGasto) }}</h2>
+      </div>
+      <div class="resumo-badge" [class.completa]="lista.percentualConcluido === 100">
+        {{ lista.percentualConcluido }}%
+      </div>
+    </div>
+    <p class="resumo-data">
+      <ion-icon name="calendar-outline"></ion-icon>
+      Finalizada em {{ formatarData(lista.dataFinalizacao) }} • {{ lista.totalItens }} itens
+    </p>
+  </div>
+
+  <!-- Busca -->
+  <div class="busca-wrap">
+    <ion-icon name="search-outline"></ion-icon>
+    <input
+      class="busca-input"
+      type="text"
+      [(ngModel)]="busca"
+      (ngModelChange)="onBuscaChange()"
+      placeholder="Buscar item nesta lista..."
+      autocomplete="off" />
+    <ion-button *ngIf="busca" fill="clear" size="small" (click)="busca = ''; onBuscaChange()">
+      <ion-icon slot="icon-only" name="close-circle"></ion-icon>
+    </ion-button>
+  </div>
+
+  <!-- Nada encontrado -->
+  <div class="vazio" *ngIf="totalEncontrado === 0">
+    <ion-icon name="search-outline"></ion-icon>
+    <p>Nenhum item encontrado para "{{ busca }}".</p>
+  </div>
+
+  <!-- Itens agrupados -->
+  <div class="grupo" *ngFor="let grupo of grupos">
+    <div class="grupo-header">
+      <span class="grupo-nome">{{ grupo.categoria }}</span>
+      <span class="grupo-subtotal">{{ formatarMoeda(grupo.subtotal) }}</span>
+    </div>
+
+    <div class="item" *ngFor="let item of grupo.itens" [class.nao-comprado]="!item.feito">
+      <ion-icon
+        class="item-status"
+        [name]="item.feito ? 'checkmark-circle' : 'ellipse-outline'"
+        [color]="item.feito ? 'success' : 'medium'">
+      </ion-icon>
+
+      <div class="item-info">
+        <h4>{{ item.tarefa }}</h4>
+        <p>
+          {{ rotuloQuantidade(item) }} × {{ formatarMoeda(item.valorUnitario) }}
+          <span class="item-desconto" *ngIf="temDesconto(item)">
+            − {{ formatarMoeda(item.desconto) }}
+          </span>
+        </p>
+      </div>
+
+      <span class="item-subtotal">{{ formatarMoeda(subtotal(item)) }}</span>
+    </div>
+  </div>
+
+  <div class="acoes-spacer"></div>
+</ion-content>
+
+<ion-footer class="detalhes-lista-footer">
+  <div class="acoes">
+    <ion-button expand="block" fill="solid" (click)="restaurar()">
+      <ion-icon name="repeat-outline" slot="start"></ion-icon>
+      Restaurar para a lista atual
+    </ion-button>
+    <ion-button expand="block" fill="clear" color="danger" (click)="excluir()">
+      <ion-icon name="trash-outline" slot="start"></ion-icon>
+      Excluir do histórico
+    </ion-button>
+  </div>
+</ion-footer>

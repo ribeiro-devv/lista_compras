@@ -255,6 +255,18 @@
       background: rgba(var(--ion-color-primary-rgb), 0.14);
       color: var(--ion-color-primary);
       font-weight: 700;
+
+      &.com-desconto {
+        background: rgba(var(--ion-color-success-rgb), 0.16);
+        color: var(--ion-color-success-shade);
+      }
+    }
+
+    .chip-riscado {
+      background: transparent;
+      color: var(--ion-color-medium);
+      text-decoration: line-through;
+      font-weight: 500;
     }
   }
 
@@ -294,6 +306,18 @@
       border-top: 1px solid rgba(255, 255, 255, 0.25);
       font-size: 0.8rem;
       opacity: 0.9;
+    }
+
+    &.economia {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
     }
   }
 
@@ -435,8 +459,68 @@ ion-fab { margin-bottom: 8px; }
   }
 }
 
+// ---- Seletor de ordenação ----
+.ordenacao-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 16px 8px;
+}
+
+.ordenacao-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(var(--ion-color-medium-rgb), 0.12);
+  color: var(--ion-color-medium);
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  ion-icon {
+    font-size: 0.95rem;
+  }
+
+  .chev {
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+
+  &:active {
+    background: rgba(var(--ion-color-primary-rgb), 0.18);
+    color: var(--ion-color-primary);
+  }
+}
+
 // ---- Cabeçalho de categoria ----
 .produtos-groups { padding-bottom: 4px; }
+
+// Ilustração da categoria aplicada como máscara CSS, para herdar a cor
+// escolhida pelo usuário (um <img src> ficaria preso à cor do arquivo).
+.categoria-arte {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  $artes: higiene-pessoal, limpeza-domestica, laticinios-padaria,
+          carnes-proteinas, frutas-verduras, graos-basicos, bebidas,
+          doces-salgadinhos, congelados, outros;
+
+  @each $arte in $artes {
+    &[data-arte='#{$arte}'] {
+      -webkit-mask-image: url('/assets/categorias/#{$arte}.svg');
+      mask-image: url('/assets/categorias/#{$arte}.svg');
+    }
+  }
+}
 
 .categoria-header {
   display: flex;

@@ -15,6 +15,12 @@ import { ManageListsModalComponent } from 'src/app/components/manage-lists-modal
 import { SharedListService, SharedList } from 'src/app/services/shared-list.service';
 import { CatalogoService, ProdutoCatalogo } from 'src/app/services/catalogo.service';
 import { PrecoService } from 'src/app/services/preco.service';
+import { OrdenacaoService, ModoOrdenacao, MODOS_ORDENACAO } from 'src/app/services/ordenacao.service';
+import { subtotalItem } from 'src/app/services/calculo-item';
+import { LojaService } from 'src/app/services/loja.service';
+import { CompararPrecosModalComponent } from 'src/app/components/comparar-precos-modal/comparar-precos-modal.component';
+import { CategoriaService } from 'src/app/services/categoria.service';
+import { abreviarUnidade } from 'src/app/services/unidades';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Subscription } from 'rxjs';
 
@@ -37,6 +43,9 @@ export class HomePage implements OnInit, OnDestroy {
   itensAgrupados: Array<{ categoria: string; itens: any[] }> = [];
   progresso = { comprados: 0, total: 0, percent: 0 };
 
+  // Ordenação da lista (só visualização — não reescreve `codigo`)
+  modoOrdenacao: ModoOrdenacao = 'categoria';
+
   // Atalhos "mais comprados" (tela vazia)
   sugeridos: ProdutoCatalogo[] = [];
 
@@ -54,10 +63,16 @@ export class HomePage implements OnInit, OnDestroy {
     private sharedListService: SharedListService,
     private catalogoService: CatalogoService,
     private precoService: PrecoService,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private ordenacaoService: OrdenacaoService,
+    private lojaService: LojaService,
+    private categoriaService: CategoriaService
   ) { }
 
   ngOnInit() {
+    this.modoOrdenacao = this.ordenacaoService.obterModo();
+    this.lojaService.carregar();
+
     this.listaSubscription = this.tarefaService.lista$.subscribe(lista => {
       this.tarefaCollection = lista;
       this.recomputar();
@@ -143,23 +158,80 @@ export class HomePage implements OnInit, OnDestroy {
 
   /** Recalcula agrupamento + progresso só quando a lista muda (evita flicker). */
   private recomputar() {
-    const grupos = new Map<string, any[]>();
-    for (const item of this.tarefaCollection) {
-      const cat = item.categoria || 'Outros';
-      if (!grupos.has(cat)) grupos.set(cat, []);
-      grupos.get(cat)!.push(item);
-    }
-    this.itensAgrupados = Array.from(grupos.entries())
-      .map(([categoria, itens]) => ({
-        categoria,
-        // Pendentes primeiro; comprados descem para o fim.
-        itens: itens.sort((a, b) => (a.feito === b.feito ? 0 : a.feito ? 1 : -1))
-      }))
-      .sort((a, b) => a.categoria.localeCompare(b.categoria));
+    this.itensAgrupados = this.ordenacaoService.agrupar(this.tarefaCollection, this.modoOrdenacao);
 
     const total = this.tarefaCollection.length;
     const comprados = this.tarefaCollection.filter(i => i.feito).length;
     this.progresso = { comprados, total, percent: total > 0 ? comprados / total : 0 };
+  }
+
+  // ---------- Ordenação ----------
+  rotuloOrdenacao(): string {
+    return this.ordenacaoService.rotulo(this.modoOrdenacao);
+  }
+
+  async abrirSeletorOrdenacao() {
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: 'Ordenar lista por',
+      mode: 'ios',
+      buttons: [
+        ...MODOS_ORDENACAO.map(modo => ({
+          text: modo.rotulo + (modo.valor === this.modoOrdenacao ? '  ✓' : ''),
+          icon: modo.icone,
+          handler: () => this.definirOrdenacao(modo.valor)
+        })),
+        { text: 'Cancelar', icon: 'close', role: 'cancel' }
+      ]
+    });
+
+    await actionSheet.present();
+  }
+
+  private definirOrdenacao(modo: ModoOrdenacao) {
+    this.modoOrdenacao = modo;
+    this.ordenacaoService.definirModo(modo);
+    this.recomputar();
+  }
+
+  // ---------- Comparação de preços ----------
+  async compararPrecos(tarefa: any) {
+    const modal = await this.modalCtrl.create({
+      component: CompararPrecosModalComponent,
+      componentProps: { nomeProduto: tarefa.tarefa },
+      cssClass: 'manage-lists-modal'
+    });
+    await modal.present();
+  }
+
+  // ---------- Categoria do item ----------
+  async abrirSeletorCategoria(tarefa: any) {
+    const atual = tarefa.categoria || 'Outros';
+
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: 'Mover para a categoria',
+      mode: 'ios',
+      buttons: [
+        ...this.catalogoService.obterCategorias().map(categoria => ({
+          text: categoria.nome + (categoria.nome === atual ? '  ✓' : ''),
+          icon: categoria.icone,
+          handler: () => this.moverParaCategoria(tarefa, categoria.nome)
+        })),
+        { text: 'Cancelar', icon: 'close', role: 'cancel' }
+      ]
+    });
+
+    await actionSheet.present();
+  }
+
+  private async moverParaCategoria(tarefa: any, categoria: string) {
+    if ((tarefa.categoria || 'Outros') === categoria) return;
+
+    try {
+      await this.tarefaService.mudarCategoria(tarefa, categoria);
+      await this.utilsService.showToast(`"${tarefa.tarefa}" movido para ${categoria}`, 'success');
+    } catch {
+      await this.utilsService.showToast('Não foi possível mudar a categoria', 'danger');
+    }
   }
 
   // ---------- Adição rápida + autocomplete ----------
@@ -274,20 +346,20 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   getCategoriaIcon(categoria: string): string {
-    const icons: { [key: string]: string } = {
-      'Laticínios & Padaria': 'cafe-outline',
-      'Carnes & Proteínas': 'restaurant-outline',
-      'Frutas & Verduras': 'leaf-outline',
-      'Grãos & Básicos': 'basket-outline',
-      'Higiene Pessoal': 'sparkles-outline',
-      'Higiene & Limpeza': 'sparkles-outline',
-      'Limpeza Doméstica': 'home-outline',
-      'Bebidas': 'wine-outline',
-      'Congelados': 'snow-outline',
-      'Doces & Salgadinhos': 'happy-outline',
-      'Outros': 'pricetag-outline'
-    };
-    return icons[categoria] || 'pricetag-outline';
+    const encontrada = this.catalogoService.obterCategorias()
+      .find(c => c.nome === categoria);
+    return encontrada?.icone || 'pricetag-outline';
+  }
+
+  getCategoriaCor(categoria: string): string {
+    const encontrada = this.catalogoService.obterCategorias()
+      .find(c => c.nome === categoria);
+    return encontrada?.cor || 'var(--ion-color-medium)';
+  }
+
+  /** Slug da ilustração; null nas categorias criadas pelo usuário (usam ionicon). */
+  getCategoriaArte(categoria: string): string | null {
+    return this.categoriaService.slugIlustracao(categoria);
   }
 
   // 🔧 FIX: Métodos para gerenciar listas
@@ -497,9 +569,26 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   calcularSubtotal(item: any): number {
-    const quantidade = parseFloat(item.quantidade) || 0;
-    const valorUnitario = parseFloat(item.valorUnitario) || 0;
-    return quantidade * valorUnitario;
+    return subtotalItem(item);
+  }
+
+  /** Subtotal antes do desconto — usado no preço riscado. */
+  calcularSubtotalCheio(item: any): number {
+    return (parseFloat(item.quantidade) || 0) * (parseFloat(item.valorUnitario) || 0);
+  }
+
+  temDesconto(item: any): boolean {
+    return (parseFloat(item.desconto) || 0) > 0;
+  }
+
+  /** Ex: "2 kg". Unidade avulsa não ganha rótulo. */
+  rotuloQuantidade(item: any): string {
+    const abreviacao = abreviarUnidade(item.unidade);
+    return abreviacao ? `${item.quantidade} ${abreviacao}` : `${item.quantidade}`;
+  }
+
+  getTotalDesconto(): number {
+    return this.tarefaService.calcularTotalDesconto();
   }
 
   restartTour() {
@@ -552,6 +641,22 @@ export class HomePage implements OnInit, OnDestroy {
           cssClass: 'action-duplicate',
           handler: () => {
             this.duplicarProduto(tarefa);
+          }
+        },
+        {
+          text: 'Mudar Categoria',
+          icon: 'pricetags-outline',
+          cssClass: 'action-edit',
+          handler: () => {
+            this.abrirSeletorCategoria(tarefa);
+          }
+        },
+        {
+          text: 'Comparar Preços',
+          icon: 'storefront-outline',
+          cssClass: 'action-info',
+          handler: () => {
+            this.compararPrecos(tarefa);
           }
         },
 
@@ -651,6 +756,48 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async arquivarLista() {
+    const lojas = this.lojaService.listarSync();
+
+    // Sem lojas cadastradas não faz sentido perguntar — vai direto.
+    if (lojas.length === 0) {
+      await this.confirmarArquivamento(null);
+      return;
+    }
+
+    const atual = this.lojaService.lojaAtualId();
+
+    const alert = await this.alertCtrl.create({
+      header: 'Onde foi essa compra?',
+      mode: 'ios',
+      inputs: [
+        ...lojas.map(loja => ({
+          type: 'radio' as const,
+          label: loja.nome,
+          value: loja.id,
+          checked: loja.id === atual
+        })),
+        {
+          type: 'radio' as const,
+          label: 'Não informar',
+          value: '',
+          checked: !atual
+        }
+      ],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Continuar',
+          handler: (lojaId: string) => {
+            this.confirmarArquivamento(lojaId || null);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private async confirmarArquivamento(lojaId: string | null) {
     const alert = await this.alertCtrl.create({
       header: 'Arquivar Lista',
       message: 'Deseja arquivar esta lista no histórico? Ela será salva e a lista atual será limpa.',
@@ -666,8 +813,8 @@ export class HomePage implements OnInit, OnDestroy {
             try {
               const loading = await this.utilsService.showLoading('Arquivando lista...');
 
-              const listaArquivada = await this.tarefaService.arquivarListaAtual();
-              
+              const listaArquivada = await this.tarefaService.arquivarListaAtual(undefined, lojaId);
+
               if (loading) await loading.dismiss();
               this.utilsService.showToast(`Lista "${listaArquivada.nome}" arquivada com sucesso!`, 'success');
             } catch (error) {

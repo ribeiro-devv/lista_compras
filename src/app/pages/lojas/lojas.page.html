@@ -1,0 +1,104 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Lojas</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="abrirNova()">
+        <ion-icon slot="icon-only" name="add"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="lojas-content">
+
+  <p class="dica">
+    Toque numa loja para marcar onde você está comprando. Os preços que você
+    registrar passam a ser gravados nela.
+  </p>
+
+  <div class="carregando" *ngIf="carregando">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div class="vazio" *ngIf="!carregando && lojas.length === 0">
+    <ion-icon name="storefront-outline"></ion-icon>
+    <h2>Nenhuma loja ainda</h2>
+    <p>Cadastre os mercados onde você costuma comprar para comparar preços entre eles.</p>
+    <ion-button shape="round" (click)="abrirNova()">
+      <ion-icon name="add" slot="start"></ion-icon>
+      Cadastrar loja
+    </ion-button>
+  </div>
+
+  <ion-list lines="none" *ngIf="!carregando && lojas.length > 0">
+    <ion-item
+      *ngFor="let loja of lojas"
+      class="loja-item"
+      [class.atual]="lojaAtualId === loja.id"
+      button
+      detail="false"
+      (click)="selecionarComoAtual(loja)">
+
+      <div class="loja-cor" slot="start" [style.background]="loja.cor"></div>
+
+      <ion-label>
+        <h3>{{ loja.nome }}</h3>
+        <p *ngIf="lojaAtualId === loja.id">Comprando aqui agora</p>
+      </ion-label>
+
+      <ion-button fill="clear" size="small" slot="end" (click)="abrirEdicao(loja); $event.stopPropagation()">
+        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+      </ion-button>
+
+      <ion-button fill="clear" size="small" color="danger" slot="end" (click)="confirmarExclusao(loja); $event.stopPropagation()">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-item>
+  </ion-list>
+</ion-content>
+
+<!-- Formulário -->
+<ion-modal [isOpen]="formAberto" (didDismiss)="fecharForm()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editando ? 'Editar loja' : 'Nova loja' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharForm()">
+            <ion-icon slot="icon-only" name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="form-loja">
+      <label class="campo-label">Nome</label>
+      <input
+        class="campo-input"
+        type="text"
+        [(ngModel)]="nome"
+        maxlength="40"
+        placeholder="Ex: Mercado do Zé" />
+
+      <label class="campo-label">Cor</label>
+      <div class="grade-cores">
+        <button
+          *ngFor="let opcao of cores"
+          class="opcao-cor"
+          [class.ativo]="cor === opcao"
+          [style.background]="opcao"
+          (click)="cor = opcao">
+        </button>
+      </div>
+
+      <ion-button expand="block" (click)="salvar()">
+        {{ editando ? 'Salvar alterações' : 'Criar loja' }}
+      </ion-button>
+    </ion-content>
+  </ng-template>
+</ion-modal>

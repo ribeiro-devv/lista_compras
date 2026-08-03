@@ -1,0 +1,115 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Categorias</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="abrirNova()">
+        <ion-icon slot="icon-only" name="add"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="categorias-content">
+
+  <p class="dica">
+    Arraste para reordenar. A ordem aqui é a ordem dos grupos na sua lista.
+  </p>
+
+  <div class="carregando" *ngIf="carregando">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <ion-reorder-group [disabled]="false" (ionItemReorder)="reordenar($any($event))" *ngIf="!carregando">
+    <ion-item *ngFor="let categoria of categorias" lines="none" class="categoria-item">
+      <div class="categoria-icone" slot="start" [style.background]="categoria.cor">
+        <ion-icon [name]="categoria.icone"></ion-icon>
+      </div>
+
+      <ion-label>
+        <h3>{{ categoria.nome }}</h3>
+        <p *ngIf="ehPadrao(categoria)">Categoria fixa do sistema</p>
+      </ion-label>
+
+      <ion-button fill="clear" size="small" slot="end" (click)="abrirEdicao(categoria)">
+        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+      </ion-button>
+
+      <ion-button
+        fill="clear"
+        size="small"
+        color="danger"
+        slot="end"
+        *ngIf="!ehPadrao(categoria)"
+        (click)="confirmarExclusao(categoria)">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+
+      <ion-reorder slot="end"></ion-reorder>
+    </ion-item>
+  </ion-reorder-group>
+</ion-content>
+
+<!-- Formulário de criar/editar -->
+<ion-modal [isOpen]="formAberto" (didDismiss)="fecharForm()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ editando ? 'Editar categoria' : 'Nova categoria' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharForm()">
+            <ion-icon slot="icon-only" name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="form-categoria">
+      <label class="campo-label">Nome</label>
+      <input
+        class="campo-input"
+        type="text"
+        [(ngModel)]="nome"
+        maxlength="30"
+        placeholder="Ex: Padaria"
+        [disabled]="!!editando && ehPadrao(editando)" />
+
+      <label class="campo-label">Ícone</label>
+      <div class="grade-icones">
+        <button
+          *ngFor="let opcao of icones"
+          class="opcao-icone"
+          [class.ativo]="icone === opcao"
+          (click)="icone = opcao">
+          <ion-icon [name]="opcao"></ion-icon>
+        </button>
+      </div>
+
+      <label class="campo-label">Cor</label>
+      <div class="grade-cores">
+        <button
+          *ngFor="let opcao of cores"
+          class="opcao-cor"
+          [class.ativo]="cor === opcao"
+          [style.background]="opcao"
+          (click)="cor = opcao">
+        </button>
+      </div>
+
+      <div class="previa">
+        <div class="categoria-icone" [style.background]="cor">
+          <ion-icon [name]="icone"></ion-icon>
+        </div>
+        <span>{{ nome || 'Nome da categoria' }}</span>
+      </div>
+
+      <ion-button expand="block" (click)="salvar()">
+        {{ editando ? 'Salvar alterações' : 'Criar categoria' }}
+      </ion-button>
+    </ion-content>
+  </ng-template>
+</ion-modal>

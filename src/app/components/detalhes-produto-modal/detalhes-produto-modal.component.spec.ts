@@ -1,24 +1,20 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { IonicModule } from '@ionic/angular';
 
+import { configurarTestBedDeTela } from 'src/app/testing/configurar-teste';
 import { DetalhesProdutoModalComponent } from './detalhes-produto-modal.component';
 
 describe('DetalhesProdutoModalComponent', () => {
   let component: DetalhesProdutoModalComponent;
   let fixture: ComponentFixture<DetalhesProdutoModalComponent>;
 
-  beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      declarations: [ DetalhesProdutoModalComponent ],
-      imports: [IonicModule.forRoot()]
-    }).compileComponents();
+  beforeEach(waitForAsync(() => configurarTestBedDeTela(DetalhesProdutoModalComponent)));
 
+  beforeEach(() => {
     fixture = TestBed.createComponent(DetalhesProdutoModalComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
-  }));
+  });
 
-  it('should create', () => {
+  it('deve criar o componente', () => {
     expect(component).toBeTruthy();
   });
 });

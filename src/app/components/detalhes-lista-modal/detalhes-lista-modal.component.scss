@@ -1,0 +1,174 @@
+.detalhes-lista-content {
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+// ---- Resumo ----
+.resumo-card {
+  margin: 12px 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--ion-card-background, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+
+  .resumo-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .resumo-label {
+    margin: 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ion-color-medium);
+  }
+
+  .resumo-valor {
+    margin: 2px 0 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+
+  .resumo-badge {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: rgba(var(--ion-color-warning-rgb), 0.18);
+    color: var(--ion-color-warning-shade);
+
+    &.completa {
+      background: rgba(var(--ion-color-success-rgb), 0.18);
+      color: var(--ion-color-success-shade);
+    }
+  }
+
+  .resumo-data {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+// ---- Busca ----
+.busca-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(var(--ion-color-medium-rgb), 0.12);
+
+  ion-icon {
+    font-size: 1.1rem;
+    color: var(--ion-color-medium);
+  }
+
+  .busca-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 6px 0;
+    font-size: 0.92rem;
+    color: var(--ion-text-color);
+  }
+}
+
+// ---- Grupos ----
+.grupo {
+  margin-bottom: 10px;
+}
+
+.grupo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 22px 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ion-card-background, #fff);
+
+  &.nao-comprado {
+    opacity: 0.65;
+  }
+
+  .item-status {
+    font-size: 1.2rem;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+
+    h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: 0.78rem;
+      color: var(--ion-color-medium);
+    }
+
+    .item-desconto {
+      margin-left: 4px;
+      color: var(--ion-color-success);
+      font-weight: 700;
+    }
+  }
+
+  .item-subtotal {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+}
+
+// ---- Vazio ----
+.vazio {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    font-size: 2.4rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+}
+
+.acoes-spacer {
+  height: 8px;
+}
+
+// ---- Rodapé ----
+.detalhes-lista-footer .acoes {
+  padding: 8px 16px 12px;
+}

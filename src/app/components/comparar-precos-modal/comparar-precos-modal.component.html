@@ -1,0 +1,51 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ nomeProduto }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="fechar()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="comparar-content">
+
+  <div class="carregando" *ngIf="carregando">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div class="vazio" *ngIf="!carregando && precos.length === 0">
+    <ion-icon name="pricetags-outline"></ion-icon>
+    <h2>Sem preços registrados</h2>
+    <p>
+      Selecione uma loja em Ajustes › Lojas e registre o preço deste produto
+      nas suas compras. A comparação aparece aqui.
+    </p>
+  </div>
+
+  <div *ngIf="!carregando && precos.length > 0">
+    <p class="dica">Último preço registrado em cada loja, do mais barato ao mais caro.</p>
+
+    <div
+      class="preco-card"
+      *ngFor="let preco of precos; let primeiro = first"
+      [class.melhor]="primeiro">
+
+      <div class="preco-cor" [style.background]="corLoja(preco)"></div>
+
+      <div class="preco-info">
+        <h3>
+          {{ nomeLoja(preco) }}
+          <ion-badge color="success" *ngIf="primeiro">mais barato</ion-badge>
+        </h3>
+        <p>Registrado em {{ formatarData(preco.data) }}</p>
+      </div>
+
+      <div class="preco-valor">
+        <strong>{{ formatarMoeda(preco.valor) }}</strong>
+        <small *ngIf="!primeiro">+{{ formatarMoeda(diferencaParaMenor(preco)) }}</small>
+      </div>
+    </div>
+  </div>
+</ion-content>

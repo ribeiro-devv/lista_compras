@@ -1,0 +1,132 @@
+.dica {
+  margin: 12px 16px 4px;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+}
+
+.carregando {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.categoria-item {
+  --padding-start: 12px;
+  margin: 0 12px 6px;
+  border-radius: 14px;
+  --background: var(--ion-card-background, #fff);
+
+  h3 {
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 0.72rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+.categoria-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  margin-right: 10px;
+
+  ion-icon {
+    font-size: 1.1rem;
+    color: #fff;
+  }
+}
+
+// ---- Formulário ----
+.form-categoria {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+}
+
+.campo-label {
+  display: block;
+  margin: 16px 0 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+}
+
+.campo-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.3);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ion-text-color);
+  font-size: 0.95rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--ion-color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.grade-icones {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.opcao-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: rgba(var(--ion-color-medium-rgb), 0.12);
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &.ativo {
+    border-color: var(--ion-color-primary);
+    color: var(--ion-color-primary);
+    background: rgba(var(--ion-color-primary-rgb), 0.14);
+  }
+}
+
+.grade-cores {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.opcao-cor {
+  aspect-ratio: 1;
+  border: 2.5px solid transparent;
+  border-radius: 999px;
+
+  &.ativo {
+    border-color: var(--ion-text-color);
+  }
+}
+
+.previa {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 24px 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(var(--ion-color-medium-rgb), 0.1);
+  font-weight: 600;
+}

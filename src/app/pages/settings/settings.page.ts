@@ -263,6 +263,14 @@ export class SettingsPage implements OnInit, OnDestroy {
     this.router.navigate(['/home']);
   }
 
+  abrirCategorias() {
+    this.router.navigate(['/categorias']);
+  }
+
+  abrirLojas() {
+    this.router.navigate(['/lojas']);
+  }
+
   async showPix() {
     const modal = await this.modalCtrl.create({
       component: PixModalComponent,

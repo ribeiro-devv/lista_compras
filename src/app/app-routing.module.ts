@@ -34,6 +34,16 @@ const routes: Routes = [
     loadChildren: () => import('./pages/historico/historico.module').then( m => m.HistoricoPageModule),
     canActivate: [AuthGuard]
   },
+  {
+    path: 'categorias',
+    loadChildren: () => import('./pages/categorias/categorias.module').then( m => m.CategoriasPageModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'lojas',
+    loadChildren: () => import('./pages/lojas/lojas.module').then( m => m.LojasPageModule),
+    canActivate: [AuthGuard]
+  },
 
 ];
 
