@@ -123,6 +123,27 @@
       </div>
     </ng-container>
 
+    <!-- Segurança -->
+    <ng-container *ngIf="biometriaSuportada">
+      <h2 class="section-title">Segurança</h2>
+      <div class="surface-card select-list">
+        <ion-item lines="none">
+          <ion-label>
+            <strong>Exigir biometria ao abrir</strong>
+            <p class="hint">Bloqueia a tela do app com {{ biometriaDescricao | lowercase }}.</p>
+          </ion-label>
+          <ion-toggle
+            slot="end"
+            [checked]="biometriaAtiva"
+            (ionChange)="alternarBiometria($event)"></ion-toggle>
+        </ion-item>
+      </div>
+      <p class="aviso-seguranca">
+        Isto tranca a tela do app, não os seus dados: sua sessão continua
+        ativa no aparelho.
+      </p>
+    </ng-container>
+
     <!-- Organização -->
     <h2 class="section-title" *ngIf="isAuthenticated">Organização</h2>
     <div class="surface-card action-list" *ngIf="isAuthenticated">

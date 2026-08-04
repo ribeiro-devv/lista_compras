@@ -447,3 +447,16 @@ body.compact {
   .quick-add { margin-bottom: 8px; }
   ion-item { --min-height: 42px; }
 }
+
+/*
+ * Leitor de codigo de barras (@capacitor-mlkit/barcode-scanning).
+ * A camera e renderizada ATRAS da webview: sem deixar o fundo transparente
+ * enquanto o scanner esta ativo, o usuario ve so uma tela opaca.
+ * A classe e adicionada no <body> pelo proprio plugin.
+ */
+body.barcode-scanner-active {
+  visibility: hidden;
+  --background: transparent;
+  --ion-background-color: transparent;
+  background: transparent;
+}

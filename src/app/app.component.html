@@ -1,3 +1,14 @@
 <ion-app>
   <ion-router-outlet></ion-router-outlet>
+
+  <!-- Bloqueio de tela por biometria -->
+  <div class="tela-bloqueada" *ngIf="bloqueado">
+    <ion-icon name="lock-closed"></ion-icon>
+    <h2>Lista de Compras</h2>
+    <p>Confirme que é você para continuar.</p>
+    <ion-button shape="round" (click)="desbloquear()">
+      <ion-icon name="finger-print" slot="start"></ion-icon>
+      Desbloquear
+    </ion-button>
+  </div>
 </ion-app>

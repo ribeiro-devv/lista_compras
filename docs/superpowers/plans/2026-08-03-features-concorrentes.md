@@ -535,6 +535,19 @@ Fallback obrigatório para PIN/senha do aparelho quando não houver biometria ca
 
 **Aceite:** ditar "arroz" preenche o campo e espera confirmação; desligar a biometria nas Ajustes remove o overlay; ler o mesmo EAN duas vezes usa o nome aprendido na primeira.
 
+**Como saiu na execução (03/08/2026):** plugins fixados nas versões compatíveis com Capacitor 7 — `@capacitor-community/speech-recognition@7.0.1`, `@aparajita/capacitor-biometric-auth@9.1.2` e `@capacitor-mlkit/barcode-scanning@7.5.0`. As versões mais novas de dois deles (mlkit 8.x, biometric-auth 10.x) **exigem Capacitor 8** e ficariam quebradas aqui.
+
+Decisões tomadas durante a implementação:
+
+- **`capacitor-native-biometric` foi descartado** em favor de `@aparajita/capacitor-biometric-auth`: o primeiro não tem release para Capacitor 7.
+- **Ligar a biometria exige autenticar na hora.** Se a digital falhar no momento de ligar a opção, ela não é ativada — senão o usuário descobriria o problema só no próximo boot, já trancado fora do app.
+- **O overlay tranca ao SAIR para o background**, não ao voltar. Assim a tela já está coberta quando o app aparece no seletor de apps recentes.
+- **O ditado nunca grava direto:** mostra "Ouvi: ..." e o item interpretado, e espera confirmação.
+- **A associação EAN→nome mora no `localStorage`** (chave `eanConhecidos`), coerente com o catálogo, que também é local. A spec previa uma coluna em `public.produtos`, mas essa tabela não existe neste projeto.
+- **`body.barcode-scanner-active` no `global.scss` é obrigatório:** o MLKit renderiza a câmera ATRÁS da webview, e sem deixar o fundo transparente o usuário vê só uma tela opaca.
+
+**Verificado:** `BUILD SUCCESSFUL` com os sete plugins, APK de 44,9 MB (era 25,5 MB antes — o MLKit responde pela maior parte), com `RECORD_AUDIO`, `CAMERA` e `USE_BIOMETRIC` presentes no APK. **Não verificado:** as três features no aparelho — nenhuma delas funciona no navegador, e não há dispositivo conectado a esta máquina.
+
 ---
 
 ## FASE 8 — Widget Android
@@ -572,6 +585,6 @@ Fallback obrigatório para PIN/senha do aparelho quando não houver biometria ca
 | 3 — Unidade e desconto | não | ✅ feita |
 | 4 — Categorias customizadas | não | ✅ feita |
 | 5 — Lojas e ilustrações | não | ✅ feita |
-| 6 — Upgrade Capacitor/Ionic/Angular | não | ✅ feita — APK compila; falta só instalar num aparelho |
-| 7 — Voz, biometria, scanner | não | sim |
+| 6 — Upgrade Capacitor/Ionic/Angular | não | ✅ feita — APK validado no aparelho pelo dono |
+| 7 — Voz, biometria, scanner | não | ✅ código feito e APK compila; falta testar no aparelho |
 | 8 — Widget | não | fim |

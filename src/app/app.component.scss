@@ -1,0 +1,33 @@
+// Cobre o app inteiro enquanto a biometria não for confirmada.
+// z-index alto de propósito: precisa ficar acima de modais e action sheets.
+.tela-bloqueada {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px;
+  text-align: center;
+  background: var(--ion-background-color, #fff);
+
+  ion-icon {
+    font-size: 3.2rem;
+    color: var(--ion-color-primary);
+    margin-bottom: 6px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0 0 14px;
+    color: var(--ion-color-medium);
+    font-size: 0.9rem;
+  }
+}

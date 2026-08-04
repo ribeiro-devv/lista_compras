@@ -21,6 +21,9 @@ import { LojaService } from 'src/app/services/loja.service';
 import { CompararPrecosModalComponent } from 'src/app/components/comparar-precos-modal/comparar-precos-modal.component';
 import { CategoriaService } from 'src/app/services/categoria.service';
 import { abreviarUnidade } from 'src/app/services/unidades';
+import { VozService } from 'src/app/services/voz.service';
+import { ScannerService } from 'src/app/services/scanner.service';
+import { interpretarDitado, ItemDitado } from 'src/app/services/ditado';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Subscription } from 'rxjs';
 
@@ -46,6 +49,11 @@ export class HomePage implements OnInit, OnDestroy {
   // Ordenação da lista (só visualização — não reescreve `codigo`)
   modoOrdenacao: ModoOrdenacao = 'categoria';
 
+  // Ditado por voz e leitor de código (só no app nativo)
+  vozDisponivel = false;
+  ouvindoVoz = false;
+  scannerDisponivel = false;
+
   // Atalhos "mais comprados" (tela vazia)
   sugeridos: ProdutoCatalogo[] = [];
 
@@ -66,12 +74,16 @@ export class HomePage implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
     private ordenacaoService: OrdenacaoService,
     private lojaService: LojaService,
-    private categoriaService: CategoriaService
+    private categoriaService: CategoriaService,
+    private vozService: VozService,
+    private scannerService: ScannerService
   ) { }
 
   ngOnInit() {
     this.modoOrdenacao = this.ordenacaoService.obterModo();
     this.lojaService.carregar();
+    this.vozDisponivel = this.vozService.disponivel();
+    this.scannerDisponivel = this.scannerService.disponivel();
 
     this.listaSubscription = this.tarefaService.lista$.subscribe(lista => {
       this.tarefaCollection = lista;
@@ -191,6 +203,149 @@ export class HomePage implements OnInit, OnDestroy {
     this.modoOrdenacao = modo;
     this.ordenacaoService.definirModo(modo);
     this.recomputar();
+  }
+
+  // ---------- Leitor de código de barras ----------
+  async lerCodigo() {
+    try {
+      const codigo = await this.scannerService.ler();
+      if (!codigo) return;
+
+      const conhecido = this.scannerService.nomeConhecido(codigo);
+
+      if (conhecido) {
+        this.tarefaService.salvar(
+          { tarefa: conhecido, quantidade: 1, valorUnitario: 0, feito: false },
+          () => this.utilsService.showToast(`"${conhecido}" adicionado`, 'success')
+        );
+        return;
+      }
+
+      await this.perguntarNomeDoCodigo(codigo);
+    } catch (erro: any) {
+      await this.utilsService.showToast(erro?.message || 'Falha ao ler o código', 'danger');
+    }
+  }
+
+  /** Código novo: o app aprende o nome agora e reconhece nas próximas vezes. */
+  private async perguntarNomeDoCodigo(codigo: string) {
+    const alert = await this.alertCtrl.create({
+      header: 'Produto novo',
+      subHeader: `Código ${codigo}`,
+      message: 'Não conheço este código ainda. Como se chama o produto? '
+        + 'Da próxima vez eu já reconheço.',
+      mode: 'ios',
+      inputs: [{ name: 'nome', type: 'text', placeholder: 'Ex: Arroz 5kg' }],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Adicionar',
+          handler: (dados: { nome: string }) => {
+            const nome = (dados?.nome || '').trim();
+            if (!nome) return false;
+
+            this.scannerService.aprender(codigo, nome);
+            this.tarefaService.salvar(
+              { tarefa: nome, quantidade: 1, valorUnitario: 0, feito: false },
+              () => this.utilsService.showToast(`"${nome}" adicionado e memorizado`, 'success')
+            );
+            return true;
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  // ---------- Ditado por voz ----------
+  async ditarItem() {
+    if (this.ouvindoVoz) return;
+
+    // Explica antes do diálogo do sistema, senão a permissão aparece do nada.
+    const permitido = await this.confirmarUsoDoMicrofone();
+    if (!permitido) return;
+
+    this.ouvindoVoz = true;
+
+    try {
+      const frase = await this.vozService.ouvir();
+      if (!frase) {
+        await this.utilsService.showToast('Não entendi. Tente de novo.', 'warning');
+        return;
+      }
+
+      const item = interpretarDitado(frase);
+      if (!item) {
+        await this.utilsService.showToast(`Não entendi "${frase}".`, 'warning');
+        return;
+      }
+
+      await this.confirmarItemDitado(item, frase);
+    } catch (erro: any) {
+      await this.utilsService.showToast(erro?.message || 'Falha ao ouvir', 'danger');
+    } finally {
+      this.ouvindoVoz = false;
+    }
+  }
+
+  private async confirmarUsoDoMicrofone(): Promise<boolean> {
+    if (localStorage.getItem('microfoneExplicado') === 'sim') return true;
+
+    const alert = await this.alertCtrl.create({
+      header: 'Adicionar por voz',
+      message: 'O app vai pedir acesso ao microfone para ouvir o nome do produto. '
+        + 'O áudio não é gravado nem enviado para lugar nenhum pelo app.',
+      mode: 'ios',
+      buttons: [
+        { text: 'Agora não', role: 'cancel' },
+        { text: 'Continuar', role: 'confirm' }
+      ]
+    });
+
+    await alert.present();
+    const { role } = await alert.onDidDismiss();
+
+    if (role === 'confirm') {
+      localStorage.setItem('microfoneExplicado', 'sim');
+      return true;
+    }
+    return false;
+  }
+
+  /** Ditado nunca grava direto: mostra o que entendeu e espera confirmação. */
+  private async confirmarItemDitado(item: ItemDitado, frase: string) {
+    const abreviacao = abreviarUnidade(item.unidade);
+    const resumo = abreviacao
+      ? `${item.quantidade} ${abreviacao} de ${item.nome}`
+      : `${item.quantidade} × ${item.nome}`;
+
+    const alert = await this.alertCtrl.create({
+      header: 'Confere?',
+      subHeader: `Ouvi: "${frase}"`,
+      message: resumo,
+      mode: 'ios',
+      buttons: [
+        { text: 'Descartar', role: 'cancel' },
+        {
+          text: 'Adicionar',
+          handler: () => {
+            this.tarefaService.salvar(
+              {
+                tarefa: item.nome,
+                quantidade: item.quantidade,
+                unidade: item.unidade,
+                valorUnitario: 0,
+                feito: false
+              },
+              () => this.utilsService.showToast(`"${item.nome}" adicionado`, 'success')
+            );
+          }
+        }
+      ]
+    });
+
+    await alert.present();
   }
 
   // ---------- Comparação de preços ----------

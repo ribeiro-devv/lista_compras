@@ -7,6 +7,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { SharedListService } from 'src/app/services/shared-list.service';
 import { ThemeService, ThemeMode, Density } from 'src/app/services/theme.service';
 import { ColorService } from 'src/app/services/color.service';
+import { BiometriaService } from 'src/app/services/biometria.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -44,6 +45,11 @@ export class SettingsPage implements OnInit, OnDestroy {
     { code: 'EUR', label: 'Euro (€)' }
   ];
 
+  // Segurança
+  biometriaSuportada = false;
+  biometriaAtiva = false;
+  biometriaDescricao = '';
+
   constructor(
     private router: Router,
     private alertController: AlertController,
@@ -52,8 +58,40 @@ export class SettingsPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private sharedListService: SharedListService,
     private themeService: ThemeService,
-    public colorService: ColorService
+    public colorService: ColorService,
+    private biometriaService: BiometriaService
   ) { }
+
+  // ---- Segurança ----
+  private async carregarBiometria() {
+    this.biometriaSuportada = await this.biometriaService.suportada();
+    if (!this.biometriaSuportada) return;
+
+    this.biometriaAtiva = this.biometriaService.estaAtiva();
+    this.biometriaDescricao = await this.biometriaService.descricao();
+  }
+
+  async alternarBiometria(evento: any) {
+    const querAtivar = !!evento?.detail?.checked;
+
+    // Nada de ligar sem provar que funciona: se a digital falhar aqui, o
+    // usuário ficaria trancado fora do app no próximo boot.
+    if (querAtivar) {
+      const autenticou = await this.biometriaService.autenticar();
+      if (!autenticou) {
+        this.biometriaAtiva = false;
+        await this.showToast('Não foi possível confirmar a biometria', 'danger');
+        return;
+      }
+    }
+
+    this.biometriaService.definirAtiva(querAtivar);
+    this.biometriaAtiva = querAtivar;
+    await this.showToast(
+      querAtivar ? 'O app vai pedir biometria ao abrir' : 'Bloqueio por biometria desligado',
+      'success'
+    );
+  }
 
   mudarCor(hex: string) {
     this.colorService.setCor(hex);
@@ -93,6 +131,7 @@ export class SettingsPage implements OnInit, OnDestroy {
     this.loadUserData();
     this.loadAppSettings();
     this.loadAuthUser();
+    this.carregarBiometria();
   }
 
   ngOnDestroy() {

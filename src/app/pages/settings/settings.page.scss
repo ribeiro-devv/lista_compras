@@ -171,3 +171,18 @@
   text-transform: none;
   font-weight: 600;
 }
+
+// ---- Segurança ----
+.select-list .hint {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  color: var(--ion-color-medium);
+  white-space: normal;
+}
+
+.aviso-seguranca {
+  margin: 8px 4px 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
