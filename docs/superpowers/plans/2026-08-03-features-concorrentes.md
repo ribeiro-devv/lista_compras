@@ -550,9 +550,13 @@ Decisões tomadas durante a implementação:
 
 ---
 
-## FASE 8 — Widget Android
+## FASE 8 — Widget Android — ❌ FORA DE ESCOPO
 
-**Migration:** não. **Depende da Fase 6.**
+**Decisão do dono em 03/08/2026: o widget está cortado do plano.** O custo não se justifica — sozinho, sai mais caro que voz, biometria e scanner somados, e só teria valor real com o app publicado e em uso diário.
+
+O desenho abaixo fica registrado caso a decisão mude. Nada dele foi implementado.
+
+**Migration:** não. **Dependeria da Fase 6.**
 
 **Comportamento:** widget de tela inicial mostrando os itens pendentes da lista atual (até 8), com contador e botão que abre o app. Marcar item pelo widget **não** entra nesta versão — exigiria escrita no Supabase a partir do processo do widget, sem sessão autenticada disponível.
 
@@ -587,4 +591,6 @@ Decisões tomadas durante a implementação:
 | 5 — Lojas e ilustrações | não | ✅ feita |
 | 6 — Upgrade Capacitor/Ionic/Angular | não | ✅ feita — APK validado no aparelho pelo dono |
 | 7 — Voz, biometria, scanner | não | ✅ código feito e APK compila; falta testar no aparelho |
-| 8 — Widget | não | fim |
+| 8 — Widget | — | ❌ cortado pelo dono em 03/08/2026 |
+
+**O plano está concluído.** Todos os pontos levantados contra os concorrentes foram entregues, exceto o widget, cortado por decisão do dono.
