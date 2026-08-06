@@ -112,6 +112,21 @@
         (blur)="fecharSugestoes()"
         placeholder="Adicionar item... (ex: arroz)"
         autocomplete="off" />
+      <ion-button
+        *ngIf="!novoItem.trim() && scannerDisponivel"
+        fill="clear"
+        class="qa-scan"
+        (click)="lerCodigo()">
+        <ion-icon name="barcode-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button
+        *ngIf="!novoItem.trim() && vozDisponivel"
+        fill="clear"
+        class="qa-mic"
+        [class.ouvindo]="ouvindoVoz"
+        (click)="ditarItem()">
+        <ion-icon [name]="ouvindoVoz ? 'radio-button-on' : 'mic-outline'" slot="icon-only"></ion-icon>
+      </ion-button>
       <ion-button *ngIf="novoItem.trim()" fill="clear" class="qa-send" (click)="adicionarRapido()">
         <ion-icon name="arrow-forward-circle" slot="icon-only"></ion-icon>
       </ion-button>

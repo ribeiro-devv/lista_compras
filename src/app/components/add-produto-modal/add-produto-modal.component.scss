@@ -1,142 +1,371 @@
-// Estilos específicos do add-produto (catálogo + botão carrinho).
-// Header/footer/inputs/botões vêm do design system global (global.scss).
+// ---------------------------------------------------------------
+// Modal de adicionar produto
+// ---------------------------------------------------------------
 
-.toggle-mode-btn {
-  --color: #fff;
-  font-size: 0.8rem;
+.add-header {
+  &::after {
+    display: none; // linha propria do ion-header no modo iOS
+  }
 }
 
-.search-section { margin-bottom: 16px; }
-.search-input { margin-top: 8px; }
+.add-header ion-toolbar {
+  --background: var(--ion-card-background, #fff);
+  --border-width: 0;
 
-.catalog-section {
-  max-height: 360px;
-  overflow-y: auto;
-  border: 1px solid rgba(var(--ion-color-medium-rgb), 0.2);
-  border-radius: var(--app-radius-sm);
-  padding: 12px;
-  margin-bottom: 16px;
+  ion-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    padding-inline-start: 16px;
+  }
 }
 
-.catalog-category { margin-bottom: 18px; }
+.add-content {
+  --background: var(--ion-card-background, #fff);
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 4px;
+  --padding-bottom: 12px;
+}
 
-.category-title {
+// ---- Rótulos ----
+.campo-label {
+  display: block;
+  margin: 14px 0 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-medium);
+
+  .opcional {
+    margin-left: 4px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.75;
+  }
+}
+
+// ---- Campo de texto padrão ----
+.campo-input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.28);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ion-text-color);
+  font-size: 1rem;
+
+  &::placeholder {
+    color: rgba(var(--ion-color-medium-rgb), 0.75);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--ion-color-primary);
+  }
+}
+
+// ---- Campo de produto (busca + digitação) ----
+.campo-produto {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--ion-text-color);
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(var(--ion-color-medium-rgb), 0.15);
-}
+  padding-inline-start: 12px;
+  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.28);
+  border-radius: 12px;
 
-.products-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-
-.product-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border: 1px solid rgba(var(--ion-color-medium-rgb), 0.2);
-  border-radius: var(--app-radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: var(--ion-card-background);
-
-  &:hover {
+  &:focus-within {
     border-color: var(--ion-color-primary);
-    box-shadow: var(--app-shadow-sm);
   }
 
-  &.selected {
-    border-color: var(--ion-color-primary);
-    background: rgba(var(--ion-color-primary-rgb), 0.08);
+  // Encosta nas sugestões quando elas estão abertas.
+  &.aberto {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
-  &.favorite {
-    border-color: var(--ion-color-danger);
-    background: rgba(var(--ion-color-danger-rgb), 0.06);
+  .campo-icone {
+    font-size: 1.1rem;
+    color: var(--ion-color-medium);
+    flex-shrink: 0;
+  }
+
+  .campo-input {
+    border: none;
+    padding-inline: 0;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  .campo-limpar {
+    display: flex;
+    align-items: center;
+    padding: 0 12px 0 4px;
+    border: none;
+    background: transparent;
+    color: var(--ion-color-medium);
+    font-size: 1.1rem;
   }
 }
 
-.product-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.product-name { font-weight: 600; color: var(--ion-text-color); font-size: 0.9rem; }
-.product-category { font-size: 0.78rem; color: var(--ion-color-medium); }
-.product-price { font-size: 0.8rem; color: var(--ion-color-success); font-weight: 700; }
-.product-actions { display: flex; align-items: center; gap: 8px; }
-
-.favorite-btn {
-  --padding-start: 4px; --padding-end: 4px;
-  --padding-top: 4px; --padding-bottom: 4px;
+// ---- Sugestões do catálogo ----
+.sugestoes {
+  border: 1.5px solid var(--ion-color-primary);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
 }
-.favorite-icon { font-size: 1.2rem; }
 
-// Botão adicionar ao carrinho
-.add-carrinho-container { margin: 18px 0; display: flex; justify-content: center; }
-
-.add-carrinho-btn {
+.sugestao {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: 16px 20px;
-  border: 2px solid rgba(var(--ion-color-medium-rgb), 0.25);
-  border-radius: var(--app-radius-sm);
-  background: var(--ion-card-background);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  font: inherit;
-  font-weight: 700;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
   color: var(--ion-text-color);
 
-  &:active { transform: scale(0.98); }
-
-  &.active {
-    background: var(--app-gradient);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: var(--app-shadow);
-
-    .carrinho-icon, .carrinho-text, .check-icon { color: #fff; }
-    .carrinho-icon { animation: cartBounce 0.5s ease; }
+  & + .sugestao {
+    border-top: 1px solid rgba(var(--ion-color-medium-rgb), 0.14);
   }
 
-  &.disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-    .carrinho-icon, .carrinho-text { color: var(--ion-color-medium); }
+  &:active {
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+  }
+
+  .sugestao-icone {
+    font-size: 1rem;
+    color: var(--ion-color-medium);
+    flex-shrink: 0;
+
+    &.favorito {
+      color: var(--ion-color-warning);
+    }
+  }
+
+  .sugestao-nome {
+    flex: 1;
+    font-size: 0.94rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sugestao-preco {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ion-color-primary);
   }
 }
 
-.carrinho-hint {
-  margin-top: 8px;
-  font-size: 0.82rem;
+// ---- Atalhos ----
+.atalhos {
+  margin-top: 14px;
+
+  .atalhos-titulo {
+    margin: 0 0 8px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ion-color-medium);
+  }
+
+  .atalhos-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .atalho {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border: 1px solid rgba(var(--ion-color-primary-rgb), 0.28);
+    border-radius: 999px;
+    background: rgba(var(--ion-color-primary-rgb), 0.07);
+    color: var(--ion-color-primary);
+    font-size: 0.83rem;
+    font-weight: 600;
+
+    ion-icon {
+      font-size: 0.9rem;
+
+      &.favorito {
+        color: var(--ion-color-warning);
+      }
+    }
+
+    &:active {
+      background: rgba(var(--ion-color-primary-rgb), 0.18);
+    }
+  }
+}
+
+// ---- Quantidade + unidade ----
+.linha-dupla {
+  display: flex;
+  gap: 12px;
+
+  .coluna {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .coluna.estreita {
+    flex: 0 0 42%;
+  }
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.28);
+  border-radius: 12px;
+  overflow: hidden;
+
+  .stepper-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 46px;
+    flex-shrink: 0;
+    border: none;
+    background: rgba(var(--ion-color-medium-rgb), 0.1);
+    color: var(--ion-color-primary);
+    font-size: 1.1rem;
+
+    &:active {
+      background: rgba(var(--ion-color-primary-rgb), 0.2);
+    }
+  }
+
+  .stepper-input {
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ion-text-color);
+
+    &:focus {
+      outline: none;
+    }
+
+    // Some com as setinhas nativas, que brigam com o stepper.
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    -moz-appearance: textfield;
+  }
+}
+
+.campo-select {
+  width: 100%;
+  height: 46px;
+  padding-inline: 12px;
+  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.28);
+  border-radius: 12px;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+// ---- Preço e subtotal ----
+.campo-preco .campo-input {
+  font-weight: 700;
+}
+
+.subtotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-primary-rgb), 0.09);
+  font-size: 0.88rem;
   color: var(--ion-color-medium);
-  text-align: center;
+
+  strong {
+    font-size: 1.02rem;
+    color: var(--ion-color-primary);
+  }
 }
 
-.carrinho-icon-wrapper {
-  display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(var(--ion-color-primary-rgb), 0.12);
+// ---- Já comprado ----
+.ja-comprado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-medium-rgb), 0.09);
 
-  .add-carrinho-btn.active & { background: rgba(255, 255, 255, 0.2); }
+  .ja-comprado-texto {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    small {
+      font-size: 0.75rem;
+      color: var(--ion-color-medium);
+    }
+  }
 }
 
-.carrinho-icon { font-size: 1.4rem; color: var(--ion-color-primary); transition: all 0.3s ease; }
-.carrinho-text { flex: 1; text-align: left; font-weight: 700; }
+// ---- Rodapé ----
+.add-footer {
+  background: var(--ion-card-background, #fff);
+  box-shadow: 0 -1px 0 rgba(var(--ion-color-medium-rgb), 0.16);
 
-.check-icon-wrapper {
-  display: flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-}
-.check-icon { font-size: 1.2rem; color: #fff; }
+  // ion-footer no modo iOS desenha uma linha propria no ::before, que
+  // duplicaria a borda acima.
+  &::before {
+    display: none;
+  }
 
-@keyframes cartBounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2) rotate(-10deg); }
+  .acoes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 12px;
+  }
+
+  ion-button[fill='clear'] {
+    flex: 0 0 auto;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    text-transform: none;
+    font-weight: 600;
+  }
+
+  .botao-salvar {
+    flex: 1;
+    margin: 0;
+    --border-radius: 12px;
+    height: 46px;
+    text-transform: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
 }

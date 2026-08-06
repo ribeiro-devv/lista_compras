@@ -479,6 +479,24 @@ Tela nova em Ajustes, **"Categorias"**:
 
 **Aceite:** `npx cap doctor` sem erro; APK debug instala e abre; `npm run test:ci` verde.
 
+**Como saiu na execução (03/08/2026):** Angular 14 → 15 → 16 → 17.3.12, Ionic 6 → 8.8, Capacitor 4 → 7.6, um commit por salto, com `npm run test:ci` e `ng build` verdes entre cada um. Três coisas que a spec não previa:
+
+1. **rxjs 6 → 7.8 virou obrigatório**, porque o Ionic 8 exige `rxjs >=7.5` e o `ng update` do Angular não sobe rxjs sozinho. Risco baixo aqui: o código não usa `toPromise()` nem `pipe()` em lugar nenhum.
+2. **zone.js 0.14 removeu os subcaminhos `dist/`.** `import 'zone.js/dist/zone'` e `'zone.js/dist/zone-testing'` viraram `'zone.js'` e `'zone.js/testing'`. Sem isso o Karma nem carrega.
+3. **AGP 8 exige `namespace` no `build.gradle`** e proíbe o atributo `package` no `AndroidManifest.xml`; `compileSdkVersion`/`minSdkVersion`/`targetSdkVersion` viraram `compileSdk`/`minSdk`/`targetSdk`.
+
+**Aceite alcançado:** `npx cap doctor` responde `Android looking great!`, e `./gradlew assembleDebug` termina em **`BUILD SUCCESSFUL`**, gerando um APK de 25,5 MB com `compileSdk 35` / `targetSdk 35`. Toolchain usada: JDK 21.0.11 e Android SDK (platform-tools, platforms;android-35, build-tools;35.0.0), instalados em `C:/Users/ingri/sdk/android`.
+
+**Como rodar o build do Android nesta máquina:**
+
+```bash
+JAVA_HOME=C:/Users/ingri/java/jdk-21.0.11_windows-x64_bin/jdk-21.0.11 ./gradlew assembleDebug
+```
+
+O `android/local.properties` aponta o `sdk.dir` e **não** é versionado (já estava no `.gitignore`). Use barra normal no caminho: com barra invertida o Gradle falha com `java.io.IOException: A sintaxe do nome do arquivo... está incorreta`, que não diz nada sobre a causa real.
+
+**Único item de aceite ainda em aberto:** "APK instala e abre". Não há aparelho conectado (`adb devices` vazio) nem emulador criado, então a instalação não foi testada. Falta o dono conectar o celular com depuração USB e rodar `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
+
 ---
 
 ## FASE 7 — Nativo: voz, biometria, leitor de código
@@ -517,11 +535,28 @@ Fallback obrigatório para PIN/senha do aparelho quando não houver biometria ca
 
 **Aceite:** ditar "arroz" preenche o campo e espera confirmação; desligar a biometria nas Ajustes remove o overlay; ler o mesmo EAN duas vezes usa o nome aprendido na primeira.
 
+**Como saiu na execução (03/08/2026):** plugins fixados nas versões compatíveis com Capacitor 7 — `@capacitor-community/speech-recognition@7.0.1`, `@aparajita/capacitor-biometric-auth@9.1.2` e `@capacitor-mlkit/barcode-scanning@7.5.0`. As versões mais novas de dois deles (mlkit 8.x, biometric-auth 10.x) **exigem Capacitor 8** e ficariam quebradas aqui.
+
+Decisões tomadas durante a implementação:
+
+- **`capacitor-native-biometric` foi descartado** em favor de `@aparajita/capacitor-biometric-auth`: o primeiro não tem release para Capacitor 7.
+- **Ligar a biometria exige autenticar na hora.** Se a digital falhar no momento de ligar a opção, ela não é ativada — senão o usuário descobriria o problema só no próximo boot, já trancado fora do app.
+- **O overlay tranca ao SAIR para o background**, não ao voltar. Assim a tela já está coberta quando o app aparece no seletor de apps recentes.
+- **O ditado nunca grava direto:** mostra "Ouvi: ..." e o item interpretado, e espera confirmação.
+- **A associação EAN→nome mora no `localStorage`** (chave `eanConhecidos`), coerente com o catálogo, que também é local. A spec previa uma coluna em `public.produtos`, mas essa tabela não existe neste projeto.
+- **`body.barcode-scanner-active` no `global.scss` é obrigatório:** o MLKit renderiza a câmera ATRÁS da webview, e sem deixar o fundo transparente o usuário vê só uma tela opaca.
+
+**Verificado:** `BUILD SUCCESSFUL` com os sete plugins, APK de 44,9 MB (era 25,5 MB antes — o MLKit responde pela maior parte), com `RECORD_AUDIO`, `CAMERA` e `USE_BIOMETRIC` presentes no APK. **Não verificado:** as três features no aparelho — nenhuma delas funciona no navegador, e não há dispositivo conectado a esta máquina.
+
 ---
 
-## FASE 8 — Widget Android
+## FASE 8 — Widget Android — ❌ FORA DE ESCOPO
 
-**Migration:** não. **Depende da Fase 6.**
+**Decisão do dono em 03/08/2026: o widget está cortado do plano.** O custo não se justifica — sozinho, sai mais caro que voz, biometria e scanner somados, e só teria valor real com o app publicado e em uso diário.
+
+O desenho abaixo fica registrado caso a decisão mude. Nada dele foi implementado.
+
+**Migration:** não. **Dependeria da Fase 6.**
 
 **Comportamento:** widget de tela inicial mostrando os itens pendentes da lista atual (até 8), com contador e botão que abre o app. Marcar item pelo widget **não** entra nesta versão — exigiria escrita no Supabase a partir do processo do widget, sem sessão autenticada disponível.
 
@@ -554,6 +589,8 @@ Fallback obrigatório para PIN/senha do aparelho quando não houver biometria ca
 | 3 — Unidade e desconto | não | ✅ feita |
 | 4 — Categorias customizadas | não | ✅ feita |
 | 5 — Lojas e ilustrações | não | ✅ feita |
-| 6 — Upgrade Capacitor/Ionic/Angular | não | **não** — pede validação em dispositivo |
-| 7 — Voz, biometria, scanner | não | sim |
-| 8 — Widget | não | fim |
+| 6 — Upgrade Capacitor/Ionic/Angular | não | ✅ feita — APK validado no aparelho pelo dono |
+| 7 — Voz, biometria, scanner | não | ✅ código feito e APK compila; falta testar no aparelho |
+| 8 — Widget | — | ❌ cortado pelo dono em 03/08/2026 |
+
+**O plano está concluído.** Todos os pontos levantados contra os concorrentes foram entregues, exceto o widget, cortado por decisão do dono.

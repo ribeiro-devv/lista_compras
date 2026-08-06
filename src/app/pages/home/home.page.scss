@@ -459,6 +459,21 @@ ion-fab { margin-bottom: 8px; }
   }
 }
 
+// ---- Microfone da adição rápida ----
+.qa-mic {
+  --color: var(--ion-color-medium);
+
+  &.ouvindo {
+    --color: var(--ion-color-danger);
+    animation: pulso-mic 1.1s ease-in-out infinite;
+  }
+}
+
+@keyframes pulso-mic {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 // ---- Seletor de ordenação ----
 .ordenacao-bar {
   display: flex;
