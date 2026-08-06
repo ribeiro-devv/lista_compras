@@ -570,38 +570,26 @@ export class HomePage implements OnInit, OnDestroy {
     });
   
     modal.onDidDismiss().then(async (result) => {
-      if (result.role === 'confirm') {
-        const dados = result.data;
+      if (result.role !== 'confirm') return;
 
-        if (!dados.tarefa || dados.tarefa.trim() === '') {
-          this.showSimpleAlert('O nome do produto não pode estar vazio');
-          return;
-        }
-  
-        if (!dados.quantidade || dados.quantidade <= 0) {
-          dados.quantidade = 0;
-        }
-  
-        if (!dados.valorUnitario || dados.valorUnitario < 0) {
-          dados.valorUnitario = 0;
-        }
+      const dados = result.data;
 
-        dados.feito = dados.feito ?? false;
-
-        if (dados.feito) {
-          const loading = await this.utilsService.showCartLoading('Adicionando ao carrinho...');
-          setTimeout(() => {
-            this.tarefaService.salvar(dados, () => {
-              this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
-              if (loading) loading.dismiss();
-            });
-          }, 1000);
-        } else {
-          this.tarefaService.salvar(dados, () => {
-            this.utilsService.showToast(`Produto ${dados.tarefa} adicionado na lista com sucesso`, 'success');
-          });
-        }
+      // O modal já garante nome preenchido; isto é só rede de segurança.
+      if (!dados?.tarefa || dados.tarefa.trim() === '') {
+        this.showSimpleAlert('O nome do produto não pode estar vazio');
+        return;
       }
+
+      if (!dados.quantidade || dados.quantidade <= 0) dados.quantidade = 1;
+      if (!dados.valorUnitario || dados.valorUnitario < 0) dados.valorUnitario = 0;
+      dados.feito = dados.feito ?? false;
+
+      // Nada de loading artificial: a gravação é otimista e a lista já
+      // atualiza na hora. O antigo setTimeout de 1s só fazia o app parecer
+      // travado quando o item entrava já marcado.
+      this.tarefaService.salvar(dados, () => {
+        this.utilsService.showToast(`"${dados.tarefa}" adicionado à lista`, 'success');
+      });
     });
     await modal.present();
   }

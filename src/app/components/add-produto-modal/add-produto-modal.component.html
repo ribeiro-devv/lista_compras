@@ -1,218 +1,146 @@
-<div class="modal-header-modern">
-  <h2 class="modal-title-modern">Adicionar Produto</h2>
-  <ion-button 
-    fill="clear" 
-    size="small" 
-    (click)="alternarModo()"
-    class="toggle-mode-btn">
-    <ion-icon [name]="modoBusca ? 'create-outline' : 'search-outline'" slot="start"></ion-icon>
-    {{ modoBusca ? 'Digitar' : 'Buscar' }}
-  </ion-button>
-</div>
+<ion-header class="add-header">
+  <ion-toolbar>
+    <ion-title>Adicionar produto</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()" aria-label="Fechar">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
 
-<div class="form-modern"> 
-  <form [formGroup]="produtoForm" (ngSubmit)="salvar()">
+<ion-content class="add-content">
 
-    <!-- Modo Busca no Catálogo -->
-    <div *ngIf="modoBusca">
-      <div class="search-section">
-        <span class="text">Buscar no Catálogo</span>
-        <ion-input
-          #nomeProdutoInput
-          class="form-input-modern search-input"
-          [(ngModel)]="termoBusca"
-          [ngModelOptions]="{standalone: true}"
-          (ionInput)="buscarProdutos()"
-          type="text"
-          placeholder="Digite o nome do produto..."
-        ></ion-input>
-      </div>
+  <!-- Produto: busca e digitação no mesmo campo -->
+  <label class="campo-label" for="campo-produto">Produto</label>
 
-      <!-- Catálogo de Produtos -->
-      <div class="catalog-section" *ngIf="mostrarCatalogo">
-        <!-- Favoritos -->
-        <div class="catalog-category" *ngIf="obterFavoritos().length > 0">
-          <h4 class="category-title">
-            <ion-icon name="heart" color="danger"></ion-icon>
-            Favoritos
-          </h4>
-          <div class="products-grid">
-            <div 
-              *ngFor="let produto of obterFavoritos()" 
-              class="product-item favorite"
-              (click)="selecionarProduto(produto)">
-              <div class="product-info">
-                <span class="product-name">{{ produto.nome }}</span>
-                <span class="product-category">{{ obterCategoriaPorId(produto.categoria)?.nome }}</span>
-                <span class="product-price" *ngIf="produto.precoMedio">
-                  {{ formatarMoedaSimples(produto.precoMedio) }}
-                </span>
-              </div>
-              <ion-icon name="heart" color="danger" class="favorite-icon"></ion-icon>
-            </div>
-          </div>
-        </div>
+  <div class="campo-produto" [class.aberto]="mostrarSugestoes && sugestoes.length > 0">
+    <ion-icon name="search-outline" class="campo-icone"></ion-icon>
+    <input
+      #nomeProdutoInput
+      id="campo-produto"
+      class="campo-input"
+      type="text"
+      autocomplete="off"
+      [(ngModel)]="nome"
+      (ngModelChange)="onNomeChange()"
+      (focus)="onNomeFoco()"
+      placeholder="Ex: Arroz branco" />
+    <button
+      *ngIf="nome"
+      type="button"
+      class="campo-limpar"
+      (click)="limparNome()"
+      aria-label="Limpar">
+      <ion-icon name="close-circle"></ion-icon>
+    </button>
+  </div>
 
-        <!-- Produtos Encontrados -->
-        <div class="catalog-category" *ngIf="produtosEncontrados.length > 0">
-          <h4 class="category-title">
-            <ion-icon name="search-outline"></ion-icon>
-            {{ termoBusca ? 'Resultados' : 'Mais Usados' }}
-          </h4>
-          <div class="products-grid">
-            <div 
-              *ngFor="let produto of produtosEncontrados" 
-              class="product-item"
-              [class.selected]="produtoSelecionado?.id === produto.id"
-              (click)="selecionarProduto(produto)">
-              <div class="product-info">
-                <span class="product-name">{{ produto.nome }}</span>
-                <span class="product-category">{{ obterCategoriaPorId(produto.categoria)?.nome }}</span>
-                <span class="product-price" *ngIf="produto.precoMedio">
-                  {{ formatarMoedaSimples(produto.precoMedio) }}
-                </span>
-              </div>
-              <div class="product-actions">
-                <ion-button 
-                  fill="clear" 
-                  size="small" 
-                  (click)="alternarFavorito(produto); $event.stopPropagation()"
-                  class="favorite-btn">
-                  <ion-icon 
-                    [name]="produto.favorito ? 'heart' : 'heart-outline'" 
-                    [color]="produto.favorito ? 'danger' : 'medium'">
-                  </ion-icon>
-                </ion-button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Categorias -->
-        <div class="catalog-category" *ngFor="let categoria of categorias">
-          <h4 class="category-title" *ngIf="obterProdutosPorCategoria(categoria.id).length > 0">
-            <ion-icon [name]="categoria.icone" [style.color]="categoria.cor"></ion-icon>
-            {{ categoria.nome }}
-          </h4>
-          <div class="products-grid" *ngIf="obterProdutosPorCategoria(categoria.id).length > 0">
-            <div 
-              *ngFor="let produto of obterProdutosPorCategoria(categoria.id).slice(0, 6)" 
-              class="product-item"
-              [class.selected]="produtoSelecionado?.id === produto.id"
-              (click)="selecionarProduto(produto)">
-              <div class="product-info">
-                <span class="product-name">{{ produto.nome }}</span>
-                <span class="product-price" *ngIf="produto.precoMedio">
-                  {{ formatarMoedaSimples(produto.precoMedio) }}
-                </span>
-              </div>
-              <div class="product-actions">
-                <ion-button 
-                  fill="clear" 
-                  size="small" 
-                  (click)="alternarFavorito(produto); $event.stopPropagation()"
-                  class="favorite-btn">
-                  <ion-icon 
-                    [name]="produto.favorito ? 'heart' : 'heart-outline'" 
-                    [color]="produto.favorito ? 'danger' : 'medium'">
-                  </ion-icon>
-                </ion-button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modo Digitação Manual -->
-    <div *ngIf="!modoBusca">
-      <div>
-        <span *ngIf="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"  class="error-text">
-          Nome do Produto é obrigatório.
-        </span>
-        <span *ngIf="!(produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty))" class="text">
-          Nome do Produto
-        </span>
-      </div>
-
-      <ion-input
-        #nomeProdutoInput
-        class="form-input-modern"
-        formControlName="tarefa"
-        type="text"
-        [class.is-invalid]="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"
-      ></ion-input>
-    </div>
-
-    <div>
-      <span class="text">
-        Quantidade
+  <!-- Sugestões do catálogo -->
+  <div class="sugestoes" *ngIf="mostrarSugestoes && sugestoes.length > 0">
+    <button
+      type="button"
+      class="sugestao"
+      *ngFor="let produto of sugestoes"
+      (click)="escolherProduto(produto)">
+      <ion-icon
+        class="sugestao-icone"
+        [name]="produto.favorito ? 'star' : 'pricetag-outline'"
+        [class.favorito]="produto.favorito"></ion-icon>
+      <span class="sugestao-nome">{{ produto.nome }}</span>
+      <span class="sugestao-preco" *ngIf="precoSugerido(produto) as preco">
+        {{ formatarMoedaSimples(preco) }}
       </span>
-    </div>
+    </button>
+  </div>
 
-    <ion-input
-      class="form-input-modern"
-      formControlName="quantidade"
-      type="number"
-      min="0"
-    ></ion-input>
-
-    <div>
-      <span class="text">
-        Unidade
-      </span>
-    </div>
-
-    <ion-select
-      class="form-input-modern"
-      formControlName="unidade"
-      interface="action-sheet"
-      [interfaceOptions]="{ header: 'Unidade de medida' }"
-    >
-      <ion-select-option *ngFor="let u of unidades" [value]="u.valor">{{ u.rotulo }}</ion-select-option>
-    </ion-select>
-
-    <div>
-      <span class="text">
-        Valor Unitário
-      </span>
-    </div>
-
-    <ion-input
-      class="form-input-modern"
-      formControlName="valorUnitario"
-      inputmode="decimal"
-      (ionInput)="formatarMoeda($event)"
-    ></ion-input>
-
-    <div class="add-carrinho-container">
-      <button 
+  <!-- Atalhos: só quando o campo está vazio, para não competir com a busca -->
+  <div class="atalhos" *ngIf="!nome && atalhos.length > 0">
+    <p class="atalhos-titulo">Você costuma comprar</p>
+    <div class="atalhos-lista">
+      <button
         type="button"
-        class="add-carrinho-btn"
-        [class.active]="produtoForm.get('feito')?.value"
-        [class.disabled]="!podeAdicionarAoCarrinho() && !produtoForm.get('feito')?.value"
-        (click)="toggleCarrinho()">
-        <div class="carrinho-icon-wrapper">
-          <ion-icon 
-            [name]="produtoForm.get('feito')?.value ? 'cart' : 'cart-outline'" 
-            class="carrinho-icon">
-          </ion-icon>
-        </div>
-        <span class="carrinho-text">
-          {{ produtoForm.get('feito')?.value ? 'Adicionado ao carrinho' : 'Adicionar ao carrinho' }}
-        </span>
-        <div class="check-icon-wrapper" *ngIf="produtoForm.get('feito')?.value">
-          <ion-icon name="checkmark" class="check-icon"></ion-icon>
-        </div>
+        class="atalho"
+        *ngFor="let produto of atalhos"
+        (click)="escolherProduto(produto)">
+        <ion-icon [name]="produto.favorito ? 'star' : 'add'" [class.favorito]="produto.favorito"></ion-icon>
+        {{ produto.nome }}
       </button>
-      <p class="carrinho-hint" *ngIf="!podeAdicionarAoCarrinho() && !produtoForm.get('feito')?.value">
-        Preencha nome, quantidade e valor para adicionar direto no carrinho
-      </p>
+    </div>
+  </div>
+
+  <!-- Quantidade e unidade lado a lado -->
+  <div class="linha-dupla">
+    <div class="coluna">
+      <label class="campo-label" for="campo-quantidade">Quantidade</label>
+      <div class="stepper">
+        <button type="button" class="stepper-btn" (click)="alterarQuantidade(-1)" aria-label="Diminuir">
+          <ion-icon name="remove"></ion-icon>
+        </button>
+        <input
+          id="campo-quantidade"
+          class="stepper-input"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.5"
+          [(ngModel)]="quantidade"
+          (ngModelChange)="normalizarQuantidade()" />
+        <button type="button" class="stepper-btn" (click)="alterarQuantidade(1)" aria-label="Aumentar">
+          <ion-icon name="add"></ion-icon>
+        </button>
+      </div>
     </div>
 
-    <div class="modal-footer">
-      <button type="button" class="modal-button-cancel" (click)="dismiss()">Cancelar</button>
-      <button type="submit" class="modal-button-save" [disabled]="produtoForm.invalid">Salvar</button>
+    <div class="coluna estreita">
+      <label class="campo-label" for="campo-unidade">Unidade</label>
+      <ion-select
+        id="campo-unidade"
+        class="campo-select"
+        [(ngModel)]="unidade"
+        interface="action-sheet"
+        [interfaceOptions]="{ header: 'Unidade de medida' }">
+        <ion-select-option *ngFor="let u of unidades" [value]="u.valor">{{ u.rotulo }}</ion-select-option>
+      </ion-select>
     </div>
-  </form>
-</div>
+  </div>
+
+  <!-- Preço, opcional -->
+  <label class="campo-label" for="campo-preco">
+    Preço unitário <span class="opcional">opcional</span>
+  </label>
+  <div class="campo-preco">
+    <input
+      id="campo-preco"
+      class="campo-input"
+      type="text"
+      inputmode="numeric"
+      [(ngModel)]="precoTexto"
+      (ngModelChange)="onPrecoChange($event)"
+      placeholder="R$ 0,00" />
+  </div>
+
+  <div class="subtotal" *ngIf="subtotal > 0">
+    <span>Subtotal</span>
+    <strong>{{ formatarMoedaSimples(subtotal) }}</strong>
+  </div>
+
+  <!-- Já comprado -->
+  <div class="ja-comprado">
+    <div class="ja-comprado-texto">
+      <strong>Já está no carrinho</strong>
+      <small>Marque se você já pegou este item</small>
+    </div>
+    <ion-toggle [(ngModel)]="feito" aria-label="Já está no carrinho"></ion-toggle>
+  </div>
+
+</ion-content>
+
+<ion-footer class="add-footer">
+  <div class="acoes">
+    <ion-button fill="clear" color="medium" (click)="dismiss()">Cancelar</ion-button>
+    <ion-button expand="block" class="botao-salvar" [disabled]="!podeSalvar()" (click)="salvar()">
+      Adicionar
+    </ion-button>
+  </div>
+</ion-footer>

@@ -31,24 +31,25 @@
     display: none !important;
 }
 
+/*
+ * O modal de adicionar produto usa ion-header/ion-content/ion-footer, entao
+ * precisa de ALTURA DEFINIDA (nao "auto") para o ion-content ter o que rolar
+ * e o rodape ficar fixo. Sem isso o conteudo colapsa.
+ * Tambem nao pode haver padding no ::part(content): quem espaca agora e o
+ * proprio ion-content.
+ */
 ion-modal.add-produto-modal {
   --width: 92%;
-  --max-width: 380px;
-  --height: auto;
-  --max-height: 85vh; /* Altura máxima relativa à viewport */
+  --max-width: 400px;
+  --height: 88%;
+  --max-height: 640px;
   --border-radius: var(--app-radius, 18px);
   --box-shadow: var(--app-shadow-lg, 0 16px 40px rgba(99, 102, 241, 0.18));
   --background: var(--ion-card-background, #ffffff);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto;
 }
 
 ion-modal.add-produto-modal::part(content) {
   border-radius: var(--app-radius, 18px);
-  padding: 18px;
   width: 100%;
 }
 
@@ -355,18 +356,6 @@ ion-input.is-invalid::part(native):focus {
   padding: 24px 20px;
   color: var(--ion-color-medium);
   font-size: 0.95rem;
-}
-
-/* Inputs padronizados dentro dos modais */
-ion-modal.add-produto-modal ion-input {
-  --background: rgba(var(--ion-color-primary-rgb), 0.05);
-  --padding-start: 12px;
-  --padding-end: 12px;
-  --border-radius: var(--app-radius-sm, 12px);
-  border: 1.5px solid rgba(var(--ion-color-medium-rgb), 0.25);
-  border-radius: var(--app-radius-sm, 12px);
-  margin-bottom: 12px;
-  font-size: 1rem;
 }
 
 /* Rodapé + botões padronizados */
