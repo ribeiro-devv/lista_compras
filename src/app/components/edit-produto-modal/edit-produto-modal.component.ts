@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ModalController } from '@ionic/angular';
 
 import { normalizarUnidade, UNIDADES, UNIDADE_PADRAO } from 'src/app/services/unidades';
+import { capitalizarInicio } from 'src/app/services/texto';
 
 @Component({
   selector: 'app-edit-produto-modal',
@@ -26,6 +27,15 @@ export class EditProdutoModalComponent implements OnInit {
   }
 
   ngOnInit() {
+    // `emitEvent: false` evita o laço infinito de o setValue disparar de novo
+    // o proprio valueChanges.
+    this.produtoForm.get('tarefa')?.valueChanges.subscribe((valor: string) => {
+      const capitalizado = capitalizarInicio(valor);
+      if (capitalizado !== valor) {
+        this.produtoForm.get('tarefa')?.setValue(capitalizado, { emitEvent: false });
+      }
+    });
+
     if (this.tarefa) {
       this.produtoForm.patchValue({
         codigo: this.tarefa.codigo,

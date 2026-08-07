@@ -111,7 +111,8 @@
         (keyup.enter)="adicionarRapido()"
         (blur)="fecharSugestoes()"
         placeholder="Adicionar item... (ex: arroz)"
-        autocomplete="off" />
+        autocomplete="off"
+        autocapitalize="sentences" />
       <ion-button
         *ngIf="!novoItem.trim() && scannerDisponivel"
         fill="clear"

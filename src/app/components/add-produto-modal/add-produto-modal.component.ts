@@ -3,6 +3,7 @@ import { ModalController } from '@ionic/angular';
 import { CatalogoService, ProdutoCatalogo } from '../../services/catalogo.service';
 import { PrecoService } from '../../services/preco.service';
 import { normalizarUnidade, UNIDADES, UNIDADE_PADRAO } from '../../services/unidades';
+import { capitalizarInicio } from '../../services/texto';
 
 /**
  * Adicionar produto.
@@ -61,6 +62,7 @@ export class AddProdutoModalComponent implements OnInit, AfterViewInit {
 
   onNomeChange() {
     this.produtoEscolhido = null;
+    this.nome = capitalizarInicio(this.nome);
     const termo = this.nome.trim();
 
     if (termo.length < 1) {

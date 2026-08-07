@@ -24,6 +24,7 @@ import { abreviarUnidade } from 'src/app/services/unidades';
 import { VozService } from 'src/app/services/voz.service';
 import { ScannerService } from 'src/app/services/scanner.service';
 import { interpretarDitado, ItemDitado } from 'src/app/services/ditado';
+import { capitalizarInicio } from 'src/app/services/texto';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Subscription } from 'rxjs';
 
@@ -391,6 +392,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   // ---------- Adição rápida + autocomplete ----------
   onQuickInput() {
+    this.novoItem = capitalizarInicio(this.novoItem);
     const termo = this.novoItem.trim();
     if (termo.length < 1) {
       this.sugestoes = [];

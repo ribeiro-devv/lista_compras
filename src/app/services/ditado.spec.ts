@@ -38,9 +38,9 @@ describe('interpretarDitado', () => {
     });
   });
 
-  it('só o nome do produto vira item de 1 unidade', () => {
+  it('só o nome do produto vira item de 1 unidade, começando maiúsculo', () => {
     expect(interpretarDitado('papel higiênico')).toEqual({
-      nome: 'papel higiênico', quantidade: 1, unidade: 'un'
+      nome: 'Papel higiênico', quantidade: 1, unidade: 'un'
     });
   });
 

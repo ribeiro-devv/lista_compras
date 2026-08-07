@@ -1,4 +1,5 @@
 import { normalizarUnidade, UNIDADE_PADRAO } from './unidades';
+import { capitalizarInicio } from './texto';
 
 export interface ItemDitado {
   nome: string;
@@ -49,7 +50,7 @@ export function interpretarDitado(frase: string): ItemDitado | null {
 
   // Sem número na frente: a frase toda é o nome.
   if (quantidade === null) {
-    return { nome: limpa, quantidade: 1, unidade: UNIDADE_PADRAO };
+    return { nome: capitalizarInicio(limpa), quantidade: 1, unidade: UNIDADE_PADRAO };
   }
 
   let indice = 1;
@@ -70,12 +71,8 @@ export function interpretarDitado(frase: string): ItemDitado | null {
   if (!nome) return null;
 
   return {
-    nome: capitalizar(nome),
+    nome: capitalizarInicio(nome),
     quantidade: quantidade > 0 ? quantidade : 1,
     unidade: normalizarUnidade(unidade)
   };
-}
-
-function capitalizar(texto: string): string {
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }

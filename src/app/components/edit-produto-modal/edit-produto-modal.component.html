@@ -17,6 +17,7 @@
       class="form-input-modern"
       formControlName="tarefa"
       type="text"
+      autocapitalize="sentences"
       [class.is-invalid]="produtoForm.get('tarefa')?.invalid && (produtoForm.get('tarefa')?.touched || produtoForm.get('tarefa')?.dirty)"
     ></ion-input>
 
